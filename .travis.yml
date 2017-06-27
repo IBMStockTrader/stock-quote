@@ -1,0 +1,10 @@
+sudo: required
+env:
+  global:
+  - DOCKER_EMAIL: kyle.s.schlosser@gmail.com
+  - DOCKER_USER: kyleschlosser
+services:
+- docker
+script:
+- docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+install: make
