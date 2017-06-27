@@ -9,8 +9,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.ParseException;
-//import java.text.SimpleDateFormat;
-//import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 //JSON-P (JSR 353).  The replaces my old usage of IBM's JSON4J (com.ibm.json.java.JSONObject)
 import javax.json.Json;
@@ -33,7 +33,7 @@ import redis.clients.jedis.Jedis; //needs jedis-2.9.0.jar on the classpath
 @Path("/")
 /** This version of StockQuote talks to API Connect (which talks to Quandl.com) */
 public class StockQuote extends Application {
-//	private static final long DAY_IN_MILLISECONDS = 24*60*60*1000;
+	private static final long DAY_IN_MILLISECONDS = 24*60*60*1000;
 
 //	private static final String REDIS_URL = "redis://x:DQJIQGKUYGBCNKTN@sl-us-dal-9-portal.1.dblayer.com:15146"; //Kyle's Redis
 	private static final String REDIS_URL = "redis://x:JTkUgQ5BXo@voting-moth-redis:6379"; //Greg's Redis in CFC
@@ -64,7 +64,7 @@ public class StockQuote extends Application {
 	 * 
 	 *  Example of data returned for https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/
 	 *
-     * { "symbol": "IBM", "date": "2017-01-03", "price": 167.19 }
+	 * { "symbol": "IBM", "date": "2017-01-03", "price": 167.19 }
 	 */
 	public JsonObject getStockQuote(@PathParam("symbol") String symbol, @QueryParam("key") String key) throws IOException, URISyntaxException {
 		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol;
@@ -110,9 +110,8 @@ public class StockQuote extends Application {
 		return quote;
 	}
 
-//	@SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation")
 	private boolean isStale(JsonObject quote) throws ParseException {
-/*
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 		String dateQuoted = quote.getString("date");
 		Date then = format.parse(dateQuoted);
@@ -122,9 +121,7 @@ public class StockQuote extends Application {
 		long difference = today.getTime() - then.getTime();
 
 		return (difference > DAY_IN_MILLISECONDS); //cached quote over a day old (Quandl only returns previous day's closing value)
-*/
-    	return false;
-    }
+	}
 
 	private JsonObject invokeREST(String verb, String uri) throws IOException {
 		URL url = new URL(uri);
