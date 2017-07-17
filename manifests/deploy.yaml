@@ -27,6 +27,12 @@ spec:
       containers:
       - name: stock-quote
         image: stock-quote:latest
+        env:
+          - name: url
+            valueFrom:
+              secretKeyRef:
+                name: redis
+                key: url
         ports:
           - containerPort: 9080
         imagePullPolicy: Always
