@@ -94,6 +94,8 @@ public class StockQuote extends Application {
      * {"dataset":{"id":9775747,"dataset_code":"IBM","database_code":"WIKI","name":"International Business Machines Corp (IBM) Prices, Dividends, Splits and Trading Volume","description":"End of day open, high, low, close and volume, dividends and splits, and split/dividend adjusted open, high, low close and volume for International Business Machines Corporation (IBM). Ex-Dividend is non-zero on ex-dividend dates. Split Ratio is 1 on non-split dates. Adjusted prices are calculated per CRSP (www.crsp.com/products/documentation/crsp-calculations)\n\nThis data is in the public domain. You may copy, distribute, disseminate or include the data in other products for commercial and/or noncommercial purposes.\n\nThis data is part of Quandl's Wiki initiative to get financial data permanently into the public domain. Quandl relies on users like you to flag errors and provide data where data is wrong or missing. Get involved: connect@quandl.com\n","refreshed_at":"2016-04-26T21:47:46.316Z","newest_available_date":"2016-04-26","oldest_available_date":"1962-01-02","column_names":["Date","Open","High","Low","Close","Volume","Ex-Dividend","Split Ratio","Adj. Open","Adj. High","Adj. Low","Adj. Close","Adj. Volume"],"frequency":"daily","type":"Time Series","premium":false,"limit":1,"transform":null,"column_index":null,"start_date":"1962-01-02","end_date":"2016-04-26","data":[["2016-04-26",148.65,149.79,147.9,149.08,2974825.0,0.0,1.0,148.65,149.79,147.9,149.08,2974825.0]],"collapse":null,"order":"desc","database_id":4922}}
 	 */
 	public JsonObject getStockQuote(@PathParam("symbol") String symbol, @QueryParam("key") String key) throws IOException {
+    	if ((symbol==null) || symbol.equalsIgnoreCase("test")) return getTestQuote();
+
 		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
 		if (key != null) uri += "&api_key="+key; //only a few invocations per IP address are allowed per day without a key
 		JsonObject quote = null;
@@ -148,6 +150,19 @@ public class StockQuote extends Application {
 
 		return (difference > DAY_IN_MILLISECONDS); //cached quote over a day old (Quandl only returns previous day's closing value)
     }
+
+	private JsonObject getTestQuote() { //in case Quandl is down or we're rate limited
+		Date now = new Date();
+		SimpleDateFormat ymd = new SimpleDateFormat("yyyy-MM-dd");
+		String today = ymd.format(now);
+
+		JsonObjectBuilder builder = Json.createObjectBuilder();
+		builder.add("symbol", "TEST");
+		builder.add("date", today);
+		builder.add("price", 123.45);
+
+		return builder.build();
+	}
 
 	private JsonObject extractFromQuandl(JsonObject obj, String symbol) {
 		JsonObject dataset = (JsonObject) obj.get("dataset");
