@@ -26,6 +26,7 @@ import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 //JSON-P (JSR 353).  The replaces my old usage of IBM's JSON4J (com.ibm.json.java.JSONObject)
 import javax.json.Json;
@@ -35,9 +36,6 @@ import javax.json.JsonObjectBuilder;
 
 //JAX-RS 2.0 (JSR 339)
 import javax.ws.rs.core.Application;
-
-import redis.clients.jedis.Jedis;
-
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
@@ -45,13 +43,18 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.Path;
 
+//Jedis (Java for Redis)
+import redis.clients.jedis.Jedis;
+
 
 @ApplicationPath("/")
 @Path("/")
 /** This version of StockQuote talks directly to Quandl.com */
 public class StockQuote extends Application {
 	private static final long DAY_IN_MILLISECONDS = 24*60*60*1000;
+	private static final int  FRIDAY = 5;
 	private String redis_url = null;
+	private SimpleDateFormat formatter = null;
 
 	public static void main(String[] args) {
 		try {
@@ -79,6 +82,9 @@ public class StockQuote extends Application {
 			//Example secret creation command: kubectl create secret generic redis
 			//--from-literal=url=redis://x:JTkUgQ5BXo@voting-moth-redis:6379
 			redis_url = System.getenv("url");
+
+			formatter = new SimpleDateFormat("yyyy-MM-dd");
+			formatter.setTimeZone(TimeZone.getTimeZone("EST5EDT")); //NYSE timezone
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}
@@ -97,7 +103,7 @@ public class StockQuote extends Application {
     	if ((symbol==null) || symbol.equalsIgnoreCase("test")) return getTestQuote();
 
 		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
-		if (key != null) uri += "&api_key="+key; //only a few invocations per IP address are allowed per day without a key
+		if (key != null) uri += "&api_key="+key; //only 50 invocations per IP address are allowed per day without a key
 		JsonObject quote = null;
 
 		try {
@@ -120,8 +126,13 @@ public class StockQuote extends Application {
 
 				if (isStale(quote)) {
 					System.out.println(symbol+" in Redis was too stale");
-					quote = extractFromQuandl(invokeREST("GET", uri), symbol); //so go get a less stale value
-					jedis.set(symbol, quote.toString()); //Put it Redis so it's there next time we ask
+					try {
+						quote = extractFromQuandl(invokeREST("GET", uri), symbol); //so go get a less stale value
+						jedis.set(symbol, quote.toString()); //Put it Redis so it's there next time we ask
+					} catch (Throwable t) {
+						System.out.println("Error getting fresh quote; using cached value instead");
+						t.printStackTrace();
+					}
 				} else {
 					System.out.println("Used "+symbol+" from Redis");				
 				}
@@ -140,15 +151,17 @@ public class StockQuote extends Application {
 
 	@SuppressWarnings("deprecation")
 	private boolean isStale(JsonObject quote) throws ParseException {
-		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 		String dateQuoted = quote.getString("date");
-		Date then = format.parse(dateQuoted);
+		Date then = formatter.parse(dateQuoted);
 		then.setHours(16); //4 PM market close
+
+		int multiplier = 1;
+		if (then.getDay() == FRIDAY) multiplier = 3; //a Friday quote is good till Monday
 
 		Date today = new Date();
 		long difference = today.getTime() - then.getTime();
 
-		return (difference > DAY_IN_MILLISECONDS); //cached quote over a day old (Quandl only returns previous day's closing value)
+		return (difference > multiplier*DAY_IN_MILLISECONDS); //cached quote over a day old (Quandl only returns previous day's closing value)
     }
 
 	private JsonObject getTestQuote() { //in case Quandl is down or we're rate limited
