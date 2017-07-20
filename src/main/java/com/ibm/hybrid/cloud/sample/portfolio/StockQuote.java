@@ -81,6 +81,24 @@ public class StockQuote extends Application {
 
 			//Example secret creation command: kubectl create secret generic redis
 			//--from-literal=url=redis://x:JTkUgQ5BXo@voting-moth-redis:6379
+
+			/* Example deployment yaml stanza:
+	           spec:
+	             containers:
+	             - name: stock-quote
+	               image: kyleschlosser/stock-quote:redis
+	               env:
+	                 - name: url
+	                   valueFrom:
+	                     secretKeyRef:
+	                       name: redis
+	                       key: url
+	               ports:
+	                 - containerPort: 9080
+	               imagePullPolicy: Always
+	             imagePullSecrets:
+	             - name: dockerhubsecret
+			 */
 			redis_url = System.getenv("url");
 
 			formatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -93,17 +111,13 @@ public class StockQuote extends Application {
     @GET
     @Path("/{symbol}")
 	@Produces("application/json")
-	/*  Getting stock quote directly from Quandl.
-	 * 
-	 *  Example of data returned for https://www.quandl.com/api/v3/datasets/WIKI/IBM.json?rows=1
-	 *
-     * {"dataset":{"id":9775747,"dataset_code":"IBM","database_code":"WIKI","name":"International Business Machines Corp (IBM) Prices, Dividends, Splits and Trading Volume","description":"End of day open, high, low, close and volume, dividends and splits, and split/dividend adjusted open, high, low close and volume for International Business Machines Corporation (IBM). Ex-Dividend is non-zero on ex-dividend dates. Split Ratio is 1 on non-split dates. Adjusted prices are calculated per CRSP (www.crsp.com/products/documentation/crsp-calculations)\n\nThis data is in the public domain. You may copy, distribute, disseminate or include the data in other products for commercial and/or noncommercial purposes.\n\nThis data is part of Quandl's Wiki initiative to get financial data permanently into the public domain. Quandl relies on users like you to flag errors and provide data where data is wrong or missing. Get involved: connect@quandl.com\n","refreshed_at":"2016-04-26T21:47:46.316Z","newest_available_date":"2016-04-26","oldest_available_date":"1962-01-02","column_names":["Date","Open","High","Low","Close","Volume","Ex-Dividend","Split Ratio","Adj. Open","Adj. High","Adj. Low","Adj. Close","Adj. Volume"],"frequency":"daily","type":"Time Series","premium":false,"limit":1,"transform":null,"column_index":null,"start_date":"1962-01-02","end_date":"2016-04-26","data":[["2016-04-26",148.65,149.79,147.9,149.08,2974825.0,0.0,1.0,148.65,149.79,147.9,149.08,2974825.0]],"collapse":null,"order":"desc","database_id":4922}}
-	 */
+	/*  Getting stock quote directly from Quandl (no dependency on API Connect). */
 	public JsonObject getStockQuote(@PathParam("symbol") String symbol, @QueryParam("key") String key) throws IOException {
     	if ((symbol==null) || symbol.equalsIgnoreCase("test")) return getTestQuote();
 
+//		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol;
 		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
-		if (key != null) uri += "&api_key="+key; //only 50 invocations per IP address are allowed per day without a key
+		if (key != null) uri += "&api_key="+key; //only 50 invocations per IP address are allowed per day without an API key
 		JsonObject quote = null;
 
 		try {
@@ -156,7 +170,7 @@ public class StockQuote extends Application {
 		then.setHours(16); //4 PM market close
 
 		int multiplier = 1;
-		if (then.getDay() == FRIDAY) multiplier = 3; //a Friday quote is good till Monday
+		if (then.getDay() == FRIDAY) multiplier = 3; //a Friday quote is good till 4 PM Monday
 
 		Date today = new Date();
 		long difference = today.getTime() - then.getTime();
@@ -166,8 +180,7 @@ public class StockQuote extends Application {
 
 	private JsonObject getTestQuote() { //in case Quandl is down or we're rate limited
 		Date now = new Date();
-		SimpleDateFormat ymd = new SimpleDateFormat("yyyy-MM-dd");
-		String today = ymd.format(now);
+		String today = formatter.format(now);
 
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		builder.add("symbol", "TEST");
@@ -177,6 +190,12 @@ public class StockQuote extends Application {
 		return builder.build();
 	}
 
+	/*  Pluck the desired values out of a deeply nested JSON structure.
+	 * 
+	 *  Example of data returned for https://www.quandl.com/api/v3/datasets/WIKI/IBM.json?rows=1
+	 *
+     * {"dataset":{"id":9775747,"dataset_code":"IBM","database_code":"WIKI","name":"International Business Machines Corp (IBM) Prices, Dividends, Splits and Trading Volume","description":"End of day open, high, low, close and volume, dividends and splits, and split/dividend adjusted open, high, low close and volume for International Business Machines Corporation (IBM). Ex-Dividend is non-zero on ex-dividend dates. Split Ratio is 1 on non-split dates. Adjusted prices are calculated per CRSP (www.crsp.com/products/documentation/crsp-calculations)\n\nThis data is in the public domain. You may copy, distribute, disseminate or include the data in other products for commercial and/or noncommercial purposes.\n\nThis data is part of Quandl's Wiki initiative to get financial data permanently into the public domain. Quandl relies on users like you to flag errors and provide data where data is wrong or missing. Get involved: connect@quandl.com\n","refreshed_at":"2016-04-26T21:47:46.316Z","newest_available_date":"2016-04-26","oldest_available_date":"1962-01-02","column_names":["Date","Open","High","Low","Close","Volume","Ex-Dividend","Split Ratio","Adj. Open","Adj. High","Adj. Low","Adj. Close","Adj. Volume"],"frequency":"daily","type":"Time Series","premium":false,"limit":1,"transform":null,"column_index":null,"start_date":"1962-01-02","end_date":"2016-04-26","data":[["2016-04-26",148.65,149.79,147.9,149.08,2974825.0,0.0,1.0,148.65,149.79,147.9,149.08,2974825.0]],"collapse":null,"order":"desc","database_id":4922}}
+	 */
 	private JsonObject extractFromQuandl(JsonObject obj, String symbol) {
 		JsonObject dataset = (JsonObject) obj.get("dataset");
 		JsonArray outerArray = (JsonArray) dataset.get("data");
