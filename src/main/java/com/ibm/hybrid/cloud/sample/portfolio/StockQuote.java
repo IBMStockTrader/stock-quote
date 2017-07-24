@@ -57,7 +57,8 @@ public class StockQuote extends Application {
 	private static final String TEST_SYMBOL = "TEST";
 	private static final double TEST_PRICE = 123.45;
 
-	private String redis_url = null;
+	private String redis_url  = null;
+	private String quandl_key = null;
 	private SimpleDateFormat formatter = null;
 
 	public static void main(String[] args) {
@@ -103,7 +104,8 @@ public class StockQuote extends Application {
 	             imagePullSecrets:
 	             - name: dockerhubsecret
 			 */
-			redis_url = System.getenv("url");
+			redis_url = System.getenv("REDIS_URL");
+			quandl_key = System.getenv("QUANDL_KEY");
 
 			formatter = new SimpleDateFormat("yyyy-MM-dd");
 			formatter.setTimeZone(TimeZone.getTimeZone("EST5EDT")); //NYSE timezone
@@ -118,10 +120,10 @@ public class StockQuote extends Application {
 	/*  Getting stock quote directly from Quandl (no dependency on API Connect). */
 	public JsonObject getStockQuote(@PathParam("symbol") String symbol, @QueryParam("key") String key) throws IOException {
     	if ((symbol==null) || symbol.equalsIgnoreCase("test")) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
+    	if (key == null) key = quandl_key; //only 50 invocations per IP address are allowed per day without an API key
 
 //		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol;
-		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
-		if (key != null) uri += "&api_key="+key; //only 50 invocations per IP address are allowed per day without an API key
+		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1&api_key="+key;
 		JsonObject quote = null;
 
 		try {
