@@ -51,8 +51,12 @@ import redis.clients.jedis.Jedis;
 @Path("/")
 /** This version of StockQuote talks directly to Quandl.com */
 public class StockQuote extends Application {
-	private static final long DAY_IN_MILLISECONDS = 24*60*60*1000;
-	private static final int  FRIDAY = 5;
+	private static final long   DAY_IN_MILLISECONDS = 24*60*60*1000;
+	private static final int    FRIDAY = 5;
+	private static final double ERROR = -1;
+	private static final String TEST_SYMBOL = "TEST";
+	private static final double TEST_PRICE = 123.45;
+
 	private String redis_url = null;
 	private SimpleDateFormat formatter = null;
 
@@ -113,7 +117,7 @@ public class StockQuote extends Application {
 	@Produces("application/json")
 	/*  Getting stock quote directly from Quandl (no dependency on API Connect). */
 	public JsonObject getStockQuote(@PathParam("symbol") String symbol, @QueryParam("key") String key) throws IOException {
-    	if ((symbol==null) || symbol.equalsIgnoreCase("test")) return getTestQuote();
+    	if ((symbol==null) || symbol.equalsIgnoreCase("test")) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
 
 //		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol;
 		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
@@ -157,7 +161,12 @@ public class StockQuote extends Application {
 			t.printStackTrace();
 
 			//something went wrong using Redis.  Fall back to the old-fashioned direct approach
+			try {
 			quote = extractFromQuandl(invokeREST("GET", uri), symbol);
+			} catch (Throwable t2) {
+				t2.printStackTrace();
+				return getTestQuote(symbol, ERROR);
+			}
 		}
 
 		return quote;
@@ -178,14 +187,14 @@ public class StockQuote extends Application {
 		return (difference > multiplier*DAY_IN_MILLISECONDS); //cached quote over a day old (Quandl only returns previous day's closing value)
     }
 
-	private JsonObject getTestQuote() { //in case Quandl is down or we're rate limited
+	private JsonObject getTestQuote(String symbol, double price) { //in case Quandl is down or we're rate limited
 		Date now = new Date();
 		String today = formatter.format(now);
 
 		JsonObjectBuilder builder = Json.createObjectBuilder();
-		builder.add("symbol", "TEST");
+		builder.add("symbol", symbol);
 		builder.add("date", today);
-		builder.add("price", 123.45);
+		builder.add("price", price);
 
 		return builder.build();
 	}
@@ -202,7 +211,7 @@ public class StockQuote extends Application {
 		JsonArray array = (JsonArray) outerArray.get(0);
 
 		JsonObjectBuilder builder = Json.createObjectBuilder();
-		builder.add("symbol", symbol);
+		builder.add("symbol", symbol.toUpperCase());
 		builder.add("date", array.get(0)); //date is the first element
 		builder.add("price", array.get(4)); //day closing value is the fifth element
 
