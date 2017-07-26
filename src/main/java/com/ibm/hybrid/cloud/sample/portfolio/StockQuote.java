@@ -86,6 +86,7 @@ public class StockQuote extends Application {
 
 			//Example secret creation command: kubectl create secret generic redis
 			//--from-literal=url=redis://x:JTkUgQ5BXo@voting-moth-redis:6379
+			//--from-literal=quandl-key=<my key>
 
 			/* Example deployment yaml stanza:
 	           spec:
@@ -93,11 +94,16 @@ public class StockQuote extends Application {
 	             - name: stock-quote
 	               image: kyleschlosser/stock-quote:redis
 	               env:
-	                 - name: url
+	                 - name: REDIS_URL
 	                   valueFrom:
 	                     secretKeyRef:
 	                       name: redis
 	                       key: url
+	                 - name: QUANDL_KEY
+	                   valueFrom:
+	                     secretKeyRef:
+	                       name: redis
+	                       key: quandl-key
 	               ports:
 	                 - containerPort: 9080
 	               imagePullPolicy: Always
