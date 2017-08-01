@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -51,8 +52,8 @@ import redis.clients.jedis.Jedis;
 @Path("/")
 /** This version of StockQuote talks directly to Quandl.com */
 public class StockQuote extends Application {
-	private static final long   DAY_IN_MILLISECONDS = 24*60*60*1000;
-	private static final int    FRIDAY = 5;
+	private static final long HOUR_IN_MILLISECONDS = 60*60*1000;
+	private static final long DAY_IN_MILLISECONDS = 24*HOUR_IN_MILLISECONDS;
 	private static final double ERROR = -1;
 	private static final String TEST_SYMBOL = "TEST";
 	private static final double TEST_PRICE = 123.45;
@@ -86,7 +87,6 @@ public class StockQuote extends Application {
 
 			//Example secret creation command: kubectl create secret generic redis
 			//--from-literal=url=redis://x:JTkUgQ5BXo@voting-moth-redis:6379
-			//--from-literal=quandl-key=<my key>
 
 			/* Example deployment yaml stanza:
 	           spec:
@@ -94,16 +94,11 @@ public class StockQuote extends Application {
 	             - name: stock-quote
 	               image: kyleschlosser/stock-quote:redis
 	               env:
-	                 - name: REDIS_URL
+	                 - name: url
 	                   valueFrom:
 	                     secretKeyRef:
 	                       name: redis
 	                       key: url
-	                 - name: QUANDL_KEY
-	                   valueFrom:
-	                     secretKeyRef:
-	                       name: redis
-	                       key: quandl-key
 	               ports:
 	                 - containerPort: 9080
 	               imagePullPolicy: Always
@@ -114,7 +109,6 @@ public class StockQuote extends Application {
 			quandl_key = System.getenv("QUANDL_KEY");
 
 			formatter = new SimpleDateFormat("yyyy-MM-dd");
-			formatter.setTimeZone(TimeZone.getTimeZone("EST5EDT")); //NYSE timezone
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}
@@ -180,19 +174,25 @@ public class StockQuote extends Application {
 		return quote;
 	}
 
-	@SuppressWarnings("deprecation")
 	private boolean isStale(JsonObject quote) throws ParseException {
 		String dateQuoted = quote.getString("date");
-		Date then = formatter.parse(dateQuoted);
-		then.setHours(16); //4 PM market close
+		Date date = formatter.parse(dateQuoted);
 
-		int multiplier = 1;
-		if (then.getDay() == FRIDAY) multiplier = 3; //a Friday quote is good till 4 PM Monday
+		Calendar then = Calendar.getInstance();
+		then.setTime(date);
+		then.setTimeZone(TimeZone.getTimeZone("EST5EDT")); //NYSE time zone
+		then.set(Calendar.HOUR_OF_DAY, 16); //4 PM market close
 
-		Date today = new Date();
-		long difference = today.getTime() - then.getTime();
+		short multiplier = 1;
+		if (then.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY) multiplier = 3; //a Friday quote is good till 4 PM Monday
 
-		return (difference > multiplier*DAY_IN_MILLISECONDS); //cached quote over a day old (Quandl only returns previous day's closing value)
+		Calendar now = Calendar.getInstance(); //initializes to instant it was called
+		long difference = now.getTimeInMillis() - then.getTimeInMillis();
+
+		String symbol = quote.getString("symbol");
+		System.out.println("Quote for "+symbol+" is "+difference/((double)HOUR_IN_MILLISECONDS)+" hours old");
+
+		return (difference > multiplier*DAY_IN_MILLISECONDS); //cached quote over a day old (Quandl only returns previous business day's closing value)
     }
 
 	private JsonObject getTestQuote(String symbol, double price) { //in case Quandl is down or we're rate limited
