@@ -87,24 +87,30 @@ public class StockQuote extends Application {
 
 			//Example secret creation command: kubectl create secret generic redis
 			//--from-literal=url=redis://x:JTkUgQ5BXo@voting-moth-redis:6379
+			//--from-literal=quandl-key=<your quandl.com key>
 
 			/* Example deployment yaml stanza:
-	           spec:
-	             containers:
-	             - name: stock-quote
-	               image: kyleschlosser/stock-quote:redis
-	               env:
-	                 - name: url
-	                   valueFrom:
-	                     secretKeyRef:
-	                       name: redis
-	                       key: url
-	               ports:
-	                 - containerPort: 9080
-	               imagePullPolicy: Always
-	             imagePullSecrets:
-	             - name: dockerhubsecret
-			 */
+			spec:
+			  containers:
+			  - name: stock-quote
+			    image: kyleschlosser/stock-quote:redis
+			    env:
+			      - name: REDIS_URL
+			        valueFrom:
+			          secretKeyRef:
+			            name: redis
+			            key: url
+			      - name: QUANDL_KEY
+			        valueFrom:
+			          secretKeyRef:
+			            name: redis
+			            key: quandl-key
+			    ports:
+			      - containerPort: 9080
+			    imagePullPolicy: Always
+			    imagePullSecrets:
+			     - name: dockerhubsecret
+			*/
 			redis_url = System.getenv("REDIS_URL");
 			quandl_key = System.getenv("QUANDL_KEY");
 
@@ -120,12 +126,14 @@ public class StockQuote extends Application {
 	/*  Getting stock quote directly from Quandl (no dependency on API Connect). */
 	public JsonObject getStockQuote(@PathParam("symbol") String symbol, @QueryParam("key") String key) throws IOException {
     	if ((symbol==null) || symbol.equalsIgnoreCase("test")) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
-    	if (key == null) key = quandl_key; //only 50 invocations per IP address are allowed per day without an API key
-
+ 
 //		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol;
-		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1&api_key="+key;
-		JsonObject quote = null;
+		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
 
+	   	if (key == null) key = quandl_key; //only 50 invocations per IP address are allowed per day without an API key
+		if ((key != null) && !key.equals("")) uri += "&api_key="+key;
+
+		JsonObject quote = null;
 		try {
 			System.out.println("Connecting to Redis using URL: "+redis_url);				
 
