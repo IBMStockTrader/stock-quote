@@ -146,7 +146,7 @@ public class StockQuote extends Application {
 			if (cachedValue == null) { //It wasn't in Redis
 				System.out.println(symbol+" wasn't in Redis");
 				quote = invokeREST("GET", uri); //so go get it like we did before we'd ever heard of Redis
-				jedis.set(symbol, quote.toString()); //Put it Redis so it's there next time we ask
+				jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
 			} else {
 				System.out.println("Got this from Redis for "+symbol+": "+cachedValue);
 				StringReader reader = new StringReader(cachedValue);
@@ -157,7 +157,7 @@ public class StockQuote extends Application {
 					System.out.println(symbol+" in Redis was too stale");
 					try {
 						quote = invokeREST("GET", uri); //so go get a less stale value
-						jedis.set(symbol, quote.toString()); //Put it Redis so it's there next time we ask
+						jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
 					} catch (Throwable t) {
 						System.out.println("Error getting fresh quote; using cached value instead");
 						t.printStackTrace();
