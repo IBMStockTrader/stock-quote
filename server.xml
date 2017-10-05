@@ -14,11 +14,34 @@
 <server description="Stock Quote server">
     <!-- Enable features -->
     <featureManager>
-        <feature>microProfile-1.0</feature>
+        <feature>microProfile-1.2</feature>
+        <feature>appSecurity-2.0</feature>
     </featureManager>
 
     <!-- To access this server from a remote client add a host attribute to the following element, e.g. host="*" -->
     <httpEndpoint httpPort="9080" httpsPort="9443" host="*" id="defaultHttpEndpoint"/>
+
+    <keyStore id="defaultKeyStore" password="passw0rd"/>
+
+    <logging consoleLogLevel="INFO" traceSpecification="*=info"/>
+
+    <basicRegistry id="basic" realm="BasicRegistry">
+        <user name="admin" password="admin"/>
+        <user name="stock" password="trader"/>
+        <user name="read" password="only"/>
+        <user name="other" password="other"/>
+        <group name="StockTrader">
+            <member name="stock"/>
+            <member name="admin"/>
+        </group>
+        <group name="StockViewer">
+            <member name="read"/>
+        </group>
+    </basicRegistry>
+
+    <administrator-role>
+        <user>admin</user>
+    </administrator-role>
 
     <webApplication id="StockQuote" location="StockQuote.war" name="StockQuote" contextRoot="/stock-quote"/>
 </server>
