@@ -31,7 +31,6 @@ import java.util.TimeZone;
 
 //JSON-P (JSR 353).  The replaces my old usage of IBM's JSON4J (com.ibm.json.java.JSONObject)
 import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -50,7 +49,7 @@ import redis.clients.jedis.Jedis;
 
 @ApplicationPath("/")
 @Path("/")
-/** This version of StockQuote talks directly to Quandl.com */
+/** This version of StockQuote talks to API Connect (which talks to Quandl.com) */
 public class StockQuote extends Application {
 	private static final long HOUR_IN_MILLISECONDS = 60*60*1000;
 	private static final long DAY_IN_MILLISECONDS = 24*HOUR_IN_MILLISECONDS;
@@ -120,31 +119,33 @@ public class StockQuote extends Application {
 		}
 	}
 
-    @GET
-    @Path("/{symbol}")
+	@GET
+	@Path("/{symbol}")
 	@Produces("application/json")
-	/*  Getting stock quote directly from Quandl (no dependency on API Connect). */
+//	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
+	/*  Get stock quote from API Connect */
 	public JsonObject getStockQuote(@PathParam("symbol") String symbol, @QueryParam("key") String key) throws IOException {
     	if ((symbol==null) || symbol.equalsIgnoreCase("test")) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
  
-//		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol;
-		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
+		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol;
+//		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
 
 	   	if (key == null) key = quandl_key; //only 50 invocations per IP address are allowed per day without an API key
-		if ((key != null) && !key.equals("")) uri += "&api_key="+key;
+
+		if ((key != null) && !key.equals("")) uri += "?quandl_key="+key;
 
 		JsonObject quote = null;
-		try {
-			System.out.println("Connecting to Redis using URL: "+redis_url);				
+		if (redis_url != null) try {
+			System.out.println("Connecting to Redis using URL: "+redis_url);
 
 			URI jedisURI = new URI(redis_url);
 			Jedis jedis = new Jedis(jedisURI); //Connect to Redis
 
-			System.out.println("Getting "+symbol+" from Redis");				
+			System.out.println("Getting "+symbol+" from Redis");
 			String cachedValue = jedis.get(symbol); //Try to get it from Redis
 			if (cachedValue == null) { //It wasn't in Redis
 				System.out.println(symbol+" wasn't in Redis");
-				quote = extractFromQuandl(invokeREST("GET", uri), symbol); //so go get it like we did before we'd ever heard of Redis
+				quote = invokeREST("GET", uri); //so go get it like we did before we'd ever heard of Redis
 				jedis.set(symbol, quote.toString()); //Put it Redis so it's there next time we ask
 			} else {
 				System.out.println("Got this from Redis for "+symbol+": "+cachedValue);
@@ -155,14 +156,14 @@ public class StockQuote extends Application {
 				if (isStale(quote)) {
 					System.out.println(symbol+" in Redis was too stale");
 					try {
-						quote = extractFromQuandl(invokeREST("GET", uri), symbol); //so go get a less stale value
+						quote = invokeREST("GET", uri); //so go get a less stale value
 						jedis.set(symbol, quote.toString()); //Put it Redis so it's there next time we ask
 					} catch (Throwable t) {
 						System.out.println("Error getting fresh quote; using cached value instead");
 						t.printStackTrace();
 					}
 				} else {
-					System.out.println("Used "+symbol+" from Redis");				
+					System.out.println("Used "+symbol+" from Redis");
 				}
 			}
 
@@ -172,9 +173,17 @@ public class StockQuote extends Application {
 
 			//something went wrong using Redis.  Fall back to the old-fashioned direct approach
 			try {
-			quote = extractFromQuandl(invokeREST("GET", uri), symbol);
+				quote = invokeREST("GET", uri);
 			} catch (Throwable t2) {
 				t2.printStackTrace();
+				return getTestQuote(symbol, ERROR);
+			}
+		} else {
+			//Redis not configured.  Fall back to the old-fashioned direct approach
+			try {
+				quote = invokeREST("GET", uri);
+			} catch (Throwable t3) {
+				t3.printStackTrace();
 				return getTestQuote(symbol, ERROR);
 			}
 		}
@@ -215,25 +224,6 @@ public class StockQuote extends Application {
 		return builder.build();
 	}
 
-	/*  Pluck the desired values out of a deeply nested JSON structure.
-	 * 
-	 *  Example of data returned for https://www.quandl.com/api/v3/datasets/WIKI/IBM.json?rows=1
-	 *
-     * {"dataset":{"id":9775747,"dataset_code":"IBM","database_code":"WIKI","name":"International Business Machines Corp (IBM) Prices, Dividends, Splits and Trading Volume","description":"End of day open, high, low, close and volume, dividends and splits, and split/dividend adjusted open, high, low close and volume for International Business Machines Corporation (IBM). Ex-Dividend is non-zero on ex-dividend dates. Split Ratio is 1 on non-split dates. Adjusted prices are calculated per CRSP (www.crsp.com/products/documentation/crsp-calculations)\n\nThis data is in the public domain. You may copy, distribute, disseminate or include the data in other products for commercial and/or noncommercial purposes.\n\nThis data is part of Quandl's Wiki initiative to get financial data permanently into the public domain. Quandl relies on users like you to flag errors and provide data where data is wrong or missing. Get involved: connect@quandl.com\n","refreshed_at":"2016-04-26T21:47:46.316Z","newest_available_date":"2016-04-26","oldest_available_date":"1962-01-02","column_names":["Date","Open","High","Low","Close","Volume","Ex-Dividend","Split Ratio","Adj. Open","Adj. High","Adj. Low","Adj. Close","Adj. Volume"],"frequency":"daily","type":"Time Series","premium":false,"limit":1,"transform":null,"column_index":null,"start_date":"1962-01-02","end_date":"2016-04-26","data":[["2016-04-26",148.65,149.79,147.9,149.08,2974825.0,0.0,1.0,148.65,149.79,147.9,149.08,2974825.0]],"collapse":null,"order":"desc","database_id":4922}}
-	 */
-	private JsonObject extractFromQuandl(JsonObject obj, String symbol) {
-		JsonObject dataset = (JsonObject) obj.get("dataset");
-		JsonArray outerArray = (JsonArray) dataset.get("data");
-		JsonArray array = (JsonArray) outerArray.get(0);
-
-		JsonObjectBuilder builder = Json.createObjectBuilder();
-		builder.add("symbol", symbol.toUpperCase());
-		builder.add("date", array.get(0)); //date is the first element
-		builder.add("price", array.get(4)); //day closing value is the fifth element
-
-		return builder.build();
-	}
-	
 	private static JsonObject invokeREST(String verb, String uri) throws IOException {
 		URL url = new URL(uri);
 
