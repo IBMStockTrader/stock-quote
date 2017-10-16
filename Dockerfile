@@ -15,5 +15,5 @@
 FROM openliberty/open-liberty:microProfile1
 COPY server.xml /config/server.xml
 COPY target/stock-quote-1.0-SNAPSHOT.war /config/apps/StockQuote.war
-COPY key.jks /config/resources/security/key.jks
-COPY ltpa.keys /config/resources/security/ltpa.keys
+COPY key.jks /output/resources/security/key.jks
+COPY ltpa.keys /output/resources/security/ltpa.keys
