@@ -23,6 +23,7 @@ spec:
     metadata:
       labels:
         app: stock-quote
+        solution: stock-trader
     spec:
       containers:
       - name: stock-quote
