@@ -144,7 +144,7 @@ public class StockQuote extends Application {
 			System.out.println("Getting "+symbol+" from Redis");
 			String cachedValue = jedis.get(symbol); //Try to get it from Redis
 			if (cachedValue == null) { //It wasn't in Redis
-				System.out.println(symbol+" wasn't in Redis");
+				System.out.println(symbol+" wasn't in Redis so we will try to put it there");
 				quote = invokeREST("GET", uri); //so go get it like we did before we'd ever heard of Redis
 				jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
 			} else {
