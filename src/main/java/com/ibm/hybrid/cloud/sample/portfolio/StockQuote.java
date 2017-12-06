@@ -22,15 +22,24 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.TimeZone;
+
+//Logging (JSR 47)
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 //JSON-P (JSR 353).  The replaces my old usage of IBM's JSON4J (com.ibm.json.java.JSONObject)
 import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -51,6 +60,7 @@ import redis.clients.jedis.Jedis;
 @Path("/")
 /** This version of StockQuote talks to API Connect (which talks to Quandl.com) */
 public class StockQuote extends Application {
+	private static Logger logger = Logger.getLogger(StockQuote.class.getName());
 	private static final long HOUR_IN_MILLISECONDS = 60*60*1000;
 	private static final long DAY_IN_MILLISECONDS = 24*HOUR_IN_MILLISECONDS;
 	private static final double ERROR = -1;
@@ -68,9 +78,9 @@ public class StockQuote extends Application {
 				StockQuote stockQuote = new StockQuote();
 				JsonObject quote = stockQuote.getStockQuote(args[0], key);
 //				double value = ((JsonNumber) quote.get("price")).doubleValue();
-				System.out.println(quote.get("price"));
+				logger.info(""+quote.get("price"));
 			} else {
-				System.out.println("Usage: StockQuote <symbol>");
+				logger.info("Usage: StockQuote <symbol>");
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();
@@ -115,8 +125,40 @@ public class StockQuote extends Application {
 
 			formatter = new SimpleDateFormat("yyyy-MM-dd");
 		} catch (Throwable t) {
-			t.printStackTrace();
+			logger.log(Level.WARNING, t.getClass().getName(), t);			
 		}
+	}
+
+	@GET
+	@Path("/")
+	@Produces("application/json")
+//	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
+	/*  Get all stock quotes in Redis */
+	public JsonArray getAllCachedStocks() {
+		JsonArrayBuilder stocks = Json.createArrayBuilder();
+
+		if (redis_url != null) try {
+			URI jedisURI = new URI(redis_url);
+			logger.fine("Connecting to Redis using URL: "+redis_url);
+			Jedis jedis = new Jedis(jedisURI); //Connect to Redis
+
+			Set<String> keys = jedis.keys("*");
+			Iterator<String> iter = keys.iterator();
+			while (iter.hasNext()) {
+				String key = iter.next();
+				String cachedValue = jedis.get(key);
+				logger.fine("Found this in Redis for "+key+": "+cachedValue);
+
+				StringReader reader = new StringReader(cachedValue);
+				JsonObject quote = Json.createReader(reader).readObject();
+				reader.close();
+
+				stocks.add(quote);
+			}
+		} catch (Throwable t) {
+			logger.log(Level.WARNING, t.getClass().getName(), t);			
+		}
+		return stocks.build();
 	}
 
 	@GET
@@ -125,8 +167,8 @@ public class StockQuote extends Application {
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
 	/*  Get stock quote from API Connect */
 	public JsonObject getStockQuote(@PathParam("symbol") String symbol, @QueryParam("key") String key) throws IOException {
-    	if ((symbol==null) || symbol.equalsIgnoreCase("test")) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
- 
+		if (symbol.equalsIgnoreCase("test")) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
+
 		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol.toUpperCase();
 //		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
 
@@ -136,54 +178,62 @@ public class StockQuote extends Application {
 
 		JsonObject quote = null;
 		if (redis_url != null) try {
-			System.out.println("Connecting to Redis using URL: "+redis_url);
+			logger.fine("Connecting to Redis using URL: "+redis_url);
 
 			URI jedisURI = new URI(redis_url);
 			Jedis jedis = new Jedis(jedisURI); //Connect to Redis
 
-			System.out.println("Getting "+symbol+" from Redis");
+			logger.fine("Getting "+symbol+" from Redis");
 			String cachedValue = jedis.get(symbol); //Try to get it from Redis
 			if (cachedValue == null) { //It wasn't in Redis
-				System.out.println(symbol+" wasn't in Redis so we will try to put it there");
+				logger.fine(symbol+" wasn't in Redis so we will try to put it there");
 				quote = invokeREST("GET", uri); //so go get it like we did before we'd ever heard of Redis
+				logger.fine("Got quote for "+symbol+" from API Connect");
 				jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
+				logger.fine("Put "+symbol+" in Redis");
 			} else {
-				System.out.println("Got this from Redis for "+symbol+": "+cachedValue);
+				logger.fine("Got this from Redis for "+symbol+": "+cachedValue);
 				StringReader reader = new StringReader(cachedValue);
 				quote = Json.createReader(reader).readObject(); //use what we got from Redis
 				reader.close();
 
 				if (isStale(quote)) {
-					System.out.println(symbol+" in Redis was too stale");
+					logger.fine(symbol+" in Redis was too stale");
 					try {
 						quote = invokeREST("GET", uri); //so go get a less stale value
+						logger.fine("Got quote for "+symbol+" from API Connect");
 						jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
+						logger.info("Refreshed "+symbol+" in Redis");
 					} catch (Throwable t) {
-						System.out.println("Error getting fresh quote; using cached value instead");
-						t.printStackTrace();
+						logger.info("Error getting fresh quote; using cached value instead");
+						logger.log(Level.WARNING, t.getClass().getName(), t);
 					}
 				} else {
-					System.out.println("Used "+symbol+" from Redis");
+					logger.info("Used "+symbol+" from Redis");
 				}
 			}
 
+			logger.fine("Completed getting stock quote - releasing Redis resources");
 			jedis.close(); //Release resource
 		} catch (Throwable t) {
-			t.printStackTrace();
-
+			logger.log(Level.WARNING, t.getClass().getName(), t);
+			
 			//something went wrong using Redis.  Fall back to the old-fashioned direct approach
 			try {
 				quote = invokeREST("GET", uri);
+				logger.fine("Got quote for "+symbol+" from API Connect");
 			} catch (Throwable t2) {
-				t2.printStackTrace();
+				logger.log(Level.WARNING, t2.getClass().getName(), t2);
 				return getTestQuote(symbol, ERROR);
 			}
 		} else {
 			//Redis not configured.  Fall back to the old-fashioned direct approach
 			try {
+				logger.warning("Redis URL not configured, so driving call directly to API Connect");
 				quote = invokeREST("GET", uri);
+				logger.fine("Got quote for "+symbol+" from API Connect");
 			} catch (Throwable t3) {
-				t3.printStackTrace();
+				logger.log(Level.WARNING, t3.getClass().getName(), t3);			
 				return getTestQuote(symbol, ERROR);
 			}
 		}
@@ -201,13 +251,16 @@ public class StockQuote extends Application {
 		then.set(Calendar.HOUR_OF_DAY, 16); //4 PM market close
 
 		short multiplier = 1;
-		if (then.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY) multiplier = 3; //a Friday quote is good till 4 PM Monday
+		if (then.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY) {
+			logger.fine("Cached quote is from Friday, so good till Monday");
+			multiplier = 3; //a Friday quote is good till 4 PM Monday
+		}
 
 		Calendar now = Calendar.getInstance(); //initializes to instant it was called
 		long difference = now.getTimeInMillis() - then.getTimeInMillis();
 
 		String symbol = quote.getString("symbol");
-		System.out.println("Quote for "+symbol+" is "+difference/((double)HOUR_IN_MILLISECONDS)+" hours old");
+		logger.fine("Quote for "+symbol+" is "+difference/((double)HOUR_IN_MILLISECONDS)+" hours old");
 
 		return (difference > multiplier*DAY_IN_MILLISECONDS); //cached quote over a day old (Quandl only returns previous business day's closing value)
     }
@@ -215,6 +268,8 @@ public class StockQuote extends Application {
 	private JsonObject getTestQuote(String symbol, double price) { //in case Quandl is down or we're rate limited
 		Date now = new Date();
 		String today = formatter.format(now);
+
+		logger.fine("Building a hard-coded quote (bypassing Redis and API Connect");
 
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		builder.add("symbol", symbol);
@@ -225,19 +280,24 @@ public class StockQuote extends Application {
 	}
 
 	private static JsonObject invokeREST(String verb, String uri) throws IOException {
+		logger.fine("Building URL for REST service: "+uri);
 		URL url = new URL(uri);
 
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod(verb);
 		conn.setRequestProperty("Content-Type", "application/json");
 		conn.setDoOutput(true);
+
+		logger.fine("Reading data from REST service");
 		InputStream stream = conn.getInputStream();
 
+		logger.fine("Parsing REST service response as JSON");
 //		JSONObject json = JSONObject.parse(stream); //JSON4J
 		JsonObject json = Json.createReader(stream).readObject();
 
 		stream.close();
 
+		logger.fine("Returning JSON from REST service");
 		return json;
 	}
 }
