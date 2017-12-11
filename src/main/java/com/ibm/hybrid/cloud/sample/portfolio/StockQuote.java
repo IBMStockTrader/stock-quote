@@ -304,7 +304,7 @@ public class StockQuote extends Application {
 	}
 
 	private static void logException(Throwable t) {
-		logger.warning(t.getClass().getName+": "+t.getMessage());
+		logger.warning(t.getClass().getName()+": "+t.getMessage());
 
 		//only log the stack trace if the level has been set to at least INFO
 		if (logger.isLoggable(Level.INFO)) {
