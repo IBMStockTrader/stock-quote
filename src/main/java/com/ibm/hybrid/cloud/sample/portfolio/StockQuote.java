@@ -306,11 +306,11 @@ public class StockQuote extends Application {
 	private static void logException(Throwable t) {
 		logger.warning(t.getClass().getName()+": "+t.getMessage());
 
-		//only log the stack trace if the level has been set to at least INFO
-		if (logger.isLoggable(Level.INFO)) {
+		//only log the stack trace if the level has been set to at least FINE
+		if (logger.isLoggable(Level.FINE)) {
 			StringWriter writer = new StringWriter();
 			t.printStackTrace(new PrintWriter(writer));
-			logger.info(writer.toString());
+			logger.fine(writer.toString());
 		}
 	}
 }
