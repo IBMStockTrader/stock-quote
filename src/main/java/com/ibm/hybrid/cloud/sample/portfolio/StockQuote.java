@@ -19,7 +19,9 @@ package com.ibm.hybrid.cloud.sample.portfolio;
 //Standard HTTP request classes.  Maybe replace these with use of JAX-RS 2.0 client package instead...
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -125,7 +127,7 @@ public class StockQuote extends Application {
 
 			formatter = new SimpleDateFormat("yyyy-MM-dd");
 		} catch (Throwable t) {
-			logger.log(Level.WARNING, t.getClass().getName(), t);			
+			logException(t);
 		}
 	}
 
@@ -156,7 +158,7 @@ public class StockQuote extends Application {
 				stocks.add(quote);
 			}
 		} catch (Throwable t) {
-			logger.log(Level.WARNING, t.getClass().getName(), t);			
+			logException(t);
 		}
 		return stocks.build();
 	}
@@ -216,14 +218,14 @@ public class StockQuote extends Application {
 			logger.fine("Completed getting stock quote - releasing Redis resources");
 			jedis.close(); //Release resource
 		} catch (Throwable t) {
-			logger.log(Level.WARNING, t.getClass().getName(), t);
+			logException(t);
 			
 			//something went wrong using Redis.  Fall back to the old-fashioned direct approach
 			try {
 				quote = invokeREST("GET", uri);
 				logger.fine("Got quote for "+symbol+" from API Connect");
 			} catch (Throwable t2) {
-				logger.log(Level.WARNING, t2.getClass().getName(), t2);
+				logException(t2);
 				return getTestQuote(symbol, ERROR);
 			}
 		} else {
@@ -233,7 +235,7 @@ public class StockQuote extends Application {
 				quote = invokeREST("GET", uri);
 				logger.fine("Got quote for "+symbol+" from API Connect");
 			} catch (Throwable t3) {
-				logger.log(Level.WARNING, t3.getClass().getName(), t3);			
+				logException(t3);
 				return getTestQuote(symbol, ERROR);
 			}
 		}
@@ -299,5 +301,16 @@ public class StockQuote extends Application {
 
 		logger.fine("Returning JSON from REST service");
 		return json;
+	}
+
+	private static void logException(Throwable t) {
+		logger.warning(t.getClass().getName+": "+t.getMessage());
+
+		//only log the stack trace if the level has been set to at least INFO
+		if (logger.isLoggable(Level.INFO)) {
+			StringWriter writer = new StringWriter();
+			t.printStackTrace(new PrintWriter(writer));
+			logger.info(writer.toString());
+		}
 	}
 }
