@@ -17,6 +17,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: stock-quote
+# namespace: stock-trader
 spec:
   replicas: 1
   template:
@@ -27,7 +28,9 @@ spec:
     spec:
       containers:
       - name: stock-quote
-        image: stock-quote:latest
+#       image: stock-quote:latest # Microservice Builder
+        image: mycluster.icp:8500/stock-trader/stock-quote:latest # IBM Cloud Private
+#       image: registry.ng.bluemix.net/stock_trader/stock-quote:latest # IBM Container Service
         env:
           - name: REDIS_URL
             valueFrom:
@@ -39,8 +42,19 @@ spec:
               secretKeyRef:
                 name: redis
                 key: quandl-key
+          - name: JWT_AUDIENCE
+            valueFrom:
+              secretKeyRef:
+                name: jwt 
+                key: audience
+          - name: JWT_ISSUER
+            valueFrom:
+              secretKeyRef:
+                name: jwt
+                key: issuer
         ports:
           - containerPort: 9080
+          - containerPort: 9443
         imagePullPolicy: Always
 ---
 #Deploy the service
@@ -48,13 +62,20 @@ apiVersion: v1
 kind: Service
 metadata:
   name: stock-quote-service
+# namespace: stock-trader
   labels:
     app: stock-quote
 spec:
   type: NodePort
   ports:
-    - port: 9080
-#     nodePort: 31002
+    - name: http
+      protocol: TCP
+      port: 9080
+      targetPort: 9080
+    - name: https
+      protocol: TCP
+      port: 9443
+      targetPort: 9443
   selector:
     app: stock-quote
 ---   
@@ -62,14 +83,15 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-# annotations:
-#   ingress.kubernetes.io/rewrite-target: /stock-quote
   name: stock-quote-ingress
+# namespace: stock-trader
+  annotations:
+    kubernetes.io/ingress.class: "istio"
 spec:
   rules:
   - http:
       paths:
-      - path: /stock-quote
+      - path: /stock-quote/.*
         backend:
           serviceName: stock-quote-service
           servicePort: 9080
