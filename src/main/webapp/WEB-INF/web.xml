@@ -3,8 +3,8 @@
 	<display-name>Stock Quote</display-name>
 	<description>Stock quote microservice from the Stock Trader application</description>
 	<login-config>
-		<auth-method>BASIC</auth-method>
-		<realm-name>BluePages</realm-name>
+		<auth-method>MP-JWT</auth-method>
+		<realm-name>MP-JWT</realm-name>
 	</login-config>
 	<security-role>
 		<description>User with read-only access to stock portfolios</description>
