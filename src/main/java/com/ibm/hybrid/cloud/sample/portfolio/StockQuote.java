@@ -24,15 +24,11 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.TimeZone;
 
 //Logging (JSR 47)
 import java.util.logging.Level;
@@ -42,6 +38,7 @@ import java.util.logging.Logger;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -51,34 +48,33 @@ import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.Path;
 
 //Jedis (Java for Redis)
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 
 @ApplicationPath("/")
 @Path("/")
-/** This version of StockQuote talks to API Connect (which talks to Quandl.com) */
+/** This version of StockQuote talks to API Connect (which talks to api.iextrading.com) */
 public class StockQuote extends Application {
 	private static Logger logger = Logger.getLogger(StockQuote.class.getName());
-	private static final long HOUR_IN_MILLISECONDS = 60*60*1000;
-	private static final long DAY_IN_MILLISECONDS = 24*HOUR_IN_MILLISECONDS;
+	private static JedisPool jedisPool = null;
+
+	private static final long MINUTE_IN_MILLISECONDS = 60000;
 	private static final double ERROR = -1;
 	private static final String TEST_SYMBOL = "TEST";
 	private static final double TEST_PRICE = 123.45;
 
-	private String redis_url  = null;
-	private String quandl_key = null;
+	private long cache_interval = 60; //default to 60 minutes
 	private SimpleDateFormat formatter = null;
 
 	public static void main(String[] args) {
 		try {
 			if (args.length > 0) {
-				String key = (args.length == 2) ? args[1] : null;
 				StockQuote stockQuote = new StockQuote();
-				JsonObject quote = stockQuote.getStockQuote(args[0], key);
+				JsonObject quote = stockQuote.getStockQuote(args[0]);
 //				double value = ((JsonNumber) quote.get("price")).doubleValue();
 				logger.info(""+quote.get("price"));
 			} else {
@@ -97,35 +93,44 @@ public class StockQuote extends Application {
 			//made available to the app via a stanza in the deployment yaml
 
 			//Example secret creation command: kubectl create secret generic redis
-			//--from-literal=url=redis://x:JTkUgQ5BXo@voting-moth-redis:6379
-			//--from-literal=quandl-key=<your quandl.com key>
+			//--from-literal=url=redis://x:JTkUgQ5BXo@cache-redis:6379
+			//--from-literal=cache-interval=<minutes>
 
 			/* Example deployment yaml stanza:
 			spec:
 			  containers:
 			  - name: stock-quote
-			    image: kyleschlosser/stock-quote:redis
+			    image: ibmstocktrader/stock-quote:latest
 			    env:
 			      - name: REDIS_URL
 			        valueFrom:
 			          secretKeyRef:
 			            name: redis
 			            key: url
-			      - name: QUANDL_KEY
+			      - name: CACHE_INTERVAL
 			        valueFrom:
 			          secretKeyRef:
 			            name: redis
-			            key: quandl-key
+			            key: cache-interval
 			    ports:
 			      - containerPort: 9080
 			    imagePullPolicy: Always
-			    imagePullSecrets:
-			     - name: dockerhubsecret
 			*/
-			redis_url = System.getenv("REDIS_URL");
-			quandl_key = System.getenv("QUANDL_KEY");
+			String redis_url = System.getenv("REDIS_URL");
+			URI jedisURI = new URI(redis_url);
+			logger.fine("Initializing Redis pool using URL: "+redis_url);
+			jedisPool = new JedisPool(jedisURI);
 
+			try {
+				String cache_string = System.getenv("CACHE_INTERVAL");
+				if (cache_string != null) {
+					cache_interval = Long.parseLong(cache_string);
+				}
+			} catch (Throwable t) {
+				logger.warning("No cache interval set - defaulting to 60 minutes");
+			}
 			formatter = new SimpleDateFormat("yyyy-MM-dd");
+			logger.fine("Initialization complete!");
 		} catch (Throwable t) {
 			logException(t);
 		}
@@ -135,14 +140,12 @@ public class StockQuote extends Application {
 	@Path("/")
 	@Produces("application/json")
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
-	/*  Get all stock quotes in Redis */
+	/**  Get all stock quotes in Redis */
 	public JsonArray getAllCachedStocks() {
 		JsonArrayBuilder stocks = Json.createArrayBuilder();
 
-		if (redis_url != null) try {
-			URI jedisURI = new URI(redis_url);
-			logger.fine("Connecting to Redis using URL: "+redis_url);
-			Jedis jedis = new Jedis(jedisURI); //Connect to Redis
+		if (jedisPool != null) try {
+			Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
 
 			Set<String> keys = jedis.keys("*");
 			Iterator<String> iter = keys.iterator();
@@ -167,23 +170,17 @@ public class StockQuote extends Application {
 	@Path("/{symbol}")
 	@Produces("application/json")
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
-	/*  Get stock quote from API Connect */
-	public JsonObject getStockQuote(@PathParam("symbol") String symbol, @QueryParam("key") String key) throws IOException {
+	/**  Get stock quote from API Connect */
+	public JsonObject getStockQuote(@PathParam("symbol") String symbol) throws IOException {
 		if (symbol.equalsIgnoreCase("test")) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
 
 		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol.toUpperCase();
-//		String uri = "https://www.quandl.com/api/v3/datasets/WIKI/"+symbol+".json?rows=1";
-
-	   	if (key == null) key = quandl_key; //only 50 invocations per IP address are allowed per day without an API key
-
-		if ((key != null) && !key.equals("")) uri += "?quandl_key="+key;
+//		String uri = "https://api.iextrading.com/1.0/stock/"+symbol.toUpperCase()+"/quote";
 
 		JsonObject quote = null;
-		if (redis_url != null) try {
-			logger.fine("Connecting to Redis using URL: "+redis_url);
-
-			URI jedisURI = new URI(redis_url);
-			Jedis jedis = new Jedis(jedisURI); //Connect to Redis
+		if (jedisPool != null) try {
+			Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
+			if (jedis==null) logger.warning("Unable to get connection to Redis from pool");
 
 			logger.fine("Getting "+symbol+" from Redis");
 			String cachedValue = jedis.get(symbol); //Try to get it from Redis
@@ -243,31 +240,22 @@ public class StockQuote extends Application {
 		return quote;
 	}
 
-	private boolean isStale(JsonObject quote) throws ParseException {
-		String dateQuoted = quote.getString("date");
-		Date date = formatter.parse(dateQuoted);
+	private boolean isStale(JsonObject quote) {
+		long now = System.currentTimeMillis();
+		JsonNumber whenQuoted = (JsonNumber) quote.get("time");
+		if (whenQuoted==null) return true;
+		long then = whenQuoted.longValue();
+		long difference = now - then;
 
-		Calendar then = Calendar.getInstance();
-		then.setTime(date);
-		then.setTimeZone(TimeZone.getTimeZone("EST5EDT")); //NYSE time zone
-		then.set(Calendar.HOUR_OF_DAY, 16); //4 PM market close
-
-		short multiplier = 1;
-		if (then.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY) {
-			logger.fine("Cached quote is from Friday, so good till Monday");
-			multiplier = 3; //a Friday quote is good till 4 PM Monday
+		if (logger.isLoggable(Level.FINE)) {
+			String symbol = quote.getString("symbol");
+			logger.fine("Quote for "+symbol+" is "+difference/((double)MINUTE_IN_MILLISECONDS)+" minutes old");
 		}
 
-		Calendar now = Calendar.getInstance(); //initializes to instant it was called
-		long difference = now.getTimeInMillis() - then.getTimeInMillis();
-
-		String symbol = quote.getString("symbol");
-		logger.fine("Quote for "+symbol+" is "+difference/((double)HOUR_IN_MILLISECONDS)+" hours old");
-
-		return (difference > multiplier*DAY_IN_MILLISECONDS); //cached quote over a day old (Quandl only returns previous business day's closing value)
+		return (difference > cache_interval*MINUTE_IN_MILLISECONDS); //cached quote is too old
     }
 
-	private JsonObject getTestQuote(String symbol, double price) { //in case Quandl is down or we're rate limited
+	private JsonObject getTestQuote(String symbol, double price) { //in case API Connect or IEX is down or we're rate limited
 		Date now = new Date();
 		String today = formatter.format(now);
 
@@ -307,10 +295,10 @@ public class StockQuote extends Application {
 		logger.warning(t.getClass().getName()+": "+t.getMessage());
 
 		//only log the stack trace if the level has been set to at least FINE
-		if (logger.isLoggable(Level.FINE)) {
+		if (logger.isLoggable(Level.INFO)) {
 			StringWriter writer = new StringWriter();
 			t.printStackTrace(new PrintWriter(writer));
-			logger.fine(writer.toString());
+			logger.info(writer.toString());
 		}
 	}
 }
