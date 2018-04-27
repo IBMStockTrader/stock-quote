@@ -29,19 +29,15 @@ spec:
       containers:
       - name: stock-quote
 #       image: stock-quote:latest # Microservice Builder
-        image: mycluster.icp:8500/stock-trader/stock-quote:latest # IBM Cloud Private
+#       image: mycluster.icp:8500/stock-trader/stock-quote:latest # IBM Cloud Private
 #       image: registry.ng.bluemix.net/stock_trader/stock-quote:latest # IBM Container Service
+        image: ibmstocktrader/stock-quote:latest # DockerHub
         env:
           - name: REDIS_URL
             valueFrom:
               secretKeyRef:
                 name: redis
                 key: url
-          - name: QUANDL_KEY
-            valueFrom:
-              secretKeyRef:
-                name: redis
-                key: quandl-key
           - name: JWT_AUDIENCE
             valueFrom:
               secretKeyRef:
