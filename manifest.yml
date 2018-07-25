@@ -1,0 +1,9 @@
+---
+applications:
+- instances: 1
+  timeout: 180
+  name: stockquote
+  buildpack: liberty-for-java
+  path: ./target/undefined-undefined.zip
+  memory: 512M
+  random-route: true
