@@ -15,7 +15,7 @@
 -->
 
 The *stock-quote* microservice gets the price of a specified stock.  It hits an API in **API Connect**,
-which drives a call to 'Quandl.com' to get the actual data.
+which drives a call to 'IEXTrading.com' to get the actual data.
 
 It responds to a `GET /{symbol}` REST request, where you pass in a stock ticker symbol, and it returns
 a JSON object containing that *symbol*, the *price*, and the *date* it was quoted.
