@@ -31,7 +31,7 @@
 
     <ssl id="RpSSLConfig" keyStoreRef="defaultKeyStore" />
 
-    <mpJwt id="myMpJwt" audiences="${env.JWT_AUDIENCE}" issuer="${env.JWT_ISSUER}" keyName="default" ignoreApplicationAuthMethod="false"/>
+    <mpJwt id="myMpJwt" audiences="${env.JWT_AUDIENCE}" issuer="${env.JWT_ISSUER}" jwksUri="http://trader-service:9080/jwt/ibm/api/myBuilder/jwk" ignoreApplicationAuthMethod="false"/>
 
 <!--
     <basicRegistry id="basic" realm="BasicRegistry">
