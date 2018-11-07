@@ -15,6 +15,7 @@
 # FROM open-liberty:microProfile2
 FROM websphere-liberty:microProfile2
 COPY server.xml /config/server.xml
+COPY jvm.options /config/jvm.options
 COPY target/stock-quote-1.0-SNAPSHOT.war /config/apps/StockQuote.war
 COPY key.jks /config/resources/security/key.jks
 # COPY validationKeystore.jks /config/resources/security/validationKeystore.jks
