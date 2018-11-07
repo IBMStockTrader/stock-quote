@@ -16,16 +16,12 @@
 
 package com.ibm.hybrid.cloud.sample.portfolio;
 
-//Standard HTTP request classes.  Maybe replace these with use of JAX-RS 2.0 client package instead...
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
@@ -34,13 +30,9 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-//JSON-P (JSR 353).  The replaces my old usage of IBM's JSON4J (com.ibm.json.java.JSONObject)
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonNumber;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+//JSON-B (JSR 367).  This largely replaces the need for JSON-P
+import javax.json.bind.Jsonb;
+import javax.json.bind.JsonbBuilder;
 
 //JAX-RS 2.0 (JSR 339)
 import javax.ws.rs.core.Application;
@@ -50,6 +42,16 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 
+//CDI 1.2
+import javax.inject.Inject;
+import javax.enterprise.context.ApplicationScoped;
+
+//mpRestClient 1.0
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+//mpFaultTolerance 1.1
+import org.eclipse.microprofile.faulttolerance.Fallback;
+
 //Jedis (Java for Redis)
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -57,26 +59,32 @@ import redis.clients.jedis.JedisPool;
 
 @ApplicationPath("/")
 @Path("/")
+@ApplicationScoped
 /** This version of StockQuote talks to API Connect (which talks to api.iextrading.com) */
 public class StockQuote extends Application {
 	private static Logger logger = Logger.getLogger(StockQuote.class.getName());
 	private static JedisPool jedisPool = null;
 
 	private static final long MINUTE_IN_MILLISECONDS = 60000;
-	private static final double ERROR = -1;
+	private static final double ERROR       = -1;
+	private static final String FAIL_SYMBOL = "FAIL";
+	private static final String SLOW_SYMBOL = "SLOW";
+	private static final long   SLOW_TIME   = 60000; //one minute
 	private static final String TEST_SYMBOL = "TEST";
-	private static final double TEST_PRICE = 123.45;
+	private static final double TEST_PRICE  = 123.45;
 
 	private long cache_interval = 60; //default to 60 minutes
 	private SimpleDateFormat formatter = null;
+
+	private @Inject @RestClient APIConnectClient apiConnectClient;
+	private @Inject @RestClient IEXClient iexClient;
 
 	public static void main(String[] args) {
 		try {
 			if (args.length > 0) {
 				StockQuote stockQuote = new StockQuote();
-				JsonObject quote = stockQuote.getStockQuote(args[0]);
-//				double value = ((JsonNumber) quote.get("price")).doubleValue();
-				logger.info(""+quote.get("price"));
+				Quote quote = stockQuote.getStockQuote(args[0]);
+				logger.info("$"+quote.getPrice());
 			} else {
 				logger.info("Usage: StockQuote <symbol>");
 			}
@@ -116,10 +124,13 @@ public class StockQuote extends Application {
 			      - containerPort: 9080
 			    imagePullPolicy: Always
 			*/
-			String redis_url = System.getenv("REDIS_URL");
-			URI jedisURI = new URI(redis_url);
-			logger.fine("Initializing Redis pool using URL: "+redis_url);
-			jedisPool = new JedisPool(jedisURI);
+
+			if (jedisPool == null) { //the pool is static; the connections within the pool are obtained as needed
+				String redis_url = System.getenv("REDIS_URL");
+				URI jedisURI = new URI(redis_url);
+				logger.info("Initializing Redis pool using URL: "+redis_url);
+				jedisPool = new JedisPool(jedisURI);
+			}
 
 			try {
 				String cache_string = System.getenv("CACHE_INTERVAL");
@@ -130,7 +141,7 @@ public class StockQuote extends Application {
 				logger.warning("No cache interval set - defaulting to 60 minutes");
 			}
 			formatter = new SimpleDateFormat("yyyy-MM-dd");
-			logger.fine("Initialization complete!");
+			logger.info("Initialization complete!");
 		} catch (Throwable t) {
 			logException(t);
 		}
@@ -140,9 +151,10 @@ public class StockQuote extends Application {
 	@Path("/")
 	@Produces("application/json")
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
-	/**  Get all stock quotes in Redis */
-	public JsonArray getAllCachedStocks() {
-		JsonArrayBuilder stocks = Json.createArrayBuilder();
+	/**  Get all stock quotes in Redis.  This is a read-only operation that just returns what's already there, without any refreshing */
+	public Quote[] getAllCachedQuotes() {
+		Quote[] quoteArray = new Quote[] {};
+		ArrayList<Quote> quotes = new ArrayList<Quote>();
 
 		if (jedisPool != null) try {
 			Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
@@ -152,55 +164,62 @@ public class StockQuote extends Application {
 			while (iter.hasNext()) {
 				String key = iter.next();
 				String cachedValue = jedis.get(key);
-				logger.fine("Found this in Redis for "+key+": "+cachedValue);
+				logger.info("Found this in Redis for "+key+": "+cachedValue);
 
-				StringReader reader = new StringReader(cachedValue);
-				JsonObject quote = Json.createReader(reader).readObject();
-				reader.close();
+				Jsonb jsonb = JsonbBuilder.create();
+				Quote quote = jsonb.fromJson(cachedValue, Quote.class);
 
-				stocks.add(quote);
+				quotes.add(quote);
 			}
 		} catch (Throwable t) {
 			logException(t);
 		}
-		return stocks.build();
+		return quotes.toArray(quoteArray);
 	}
 
 	@GET
 	@Path("/{symbol}")
 	@Produces("application/json")
+	@Fallback(fallbackMethod = "getStockQuoteViaIEX")
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
 	/**  Get stock quote from API Connect */
-	public JsonObject getStockQuote(@PathParam("symbol") String symbol) throws IOException {
-		if (symbol.equalsIgnoreCase("test")) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
+	public Quote getStockQuote(@PathParam("symbol") String symbol) throws IOException {
+		if (symbol.equalsIgnoreCase(TEST_SYMBOL)) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
+		if (symbol.equalsIgnoreCase(SLOW_SYMBOL)) return getSlowQuote();
+		if (symbol.equalsIgnoreCase(FAIL_SYMBOL)) { //to help test Istio retry policies
+			logger.info("Throwing a RuntimeException for symbol FAIL!");
+			throw new RuntimeException("Failing as requested, since you asked for FAIL!");
+		}
 
-		String uri = "https://api.us.apiconnect.ibmcloud.com/jalcornusibmcom-dev/sb/stocks/"+symbol.toUpperCase();
-//		String uri = "https://api.iextrading.com/1.0/stock/"+symbol.toUpperCase()+"/quote";
-
-		JsonObject quote = null;
+		Quote quote = null;
 		if (jedisPool != null) try {
 			Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
 			if (jedis==null) logger.warning("Unable to get connection to Redis from pool");
 
-			logger.fine("Getting "+symbol+" from Redis");
+			logger.info("Getting "+symbol+" from Redis");
 			String cachedValue = jedis.get(symbol); //Try to get it from Redis
 			if (cachedValue == null) { //It wasn't in Redis
-				logger.fine(symbol+" wasn't in Redis so we will try to put it there");
-				quote = invokeREST("GET", uri); //so go get it like we did before we'd ever heard of Redis
-				logger.fine("Got quote for "+symbol+" from API Connect");
+				logger.info(symbol+" wasn't in Redis so we will try to put it there");
+				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol); //so go get it like we did before we'd ever heard of Redis
+				logger.info("Got quote for "+symbol+" from API Connect");
 				jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
-				logger.fine("Put "+symbol+" in Redis");
+				logger.info("Put "+symbol+" in Redis");
 			} else {
-				logger.fine("Got this from Redis for "+symbol+": "+cachedValue);
-				StringReader reader = new StringReader(cachedValue);
-				quote = Json.createReader(reader).readObject(); //use what we got from Redis
-				reader.close();
+				logger.info("Got this from Redis for "+symbol+": "+cachedValue);
+
+				try {
+					Jsonb jsonb = JsonbBuilder.create();
+					quote = jsonb.fromJson(cachedValue, Quote.class);
+				} catch (Throwable t4) {
+					logger.info("Unable to parse JSON obtained from Redis.  Proceeding as if the quote was too stale.");
+					logException(t4);
+				}
 
 				if (isStale(quote)) {
-					logger.fine(symbol+" in Redis was too stale");
+					logger.info(symbol+" in Redis was too stale");
 					try {
-						quote = invokeREST("GET", uri); //so go get a less stale value
-						logger.fine("Got quote for "+symbol+" from API Connect");
+						quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol); //so go get a less stale value
+						logger.info("Got quote for "+symbol+" from API Connect");
 						jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
 						logger.info("Refreshed "+symbol+" in Redis");
 					} catch (Throwable t) {
@@ -212,15 +231,15 @@ public class StockQuote extends Application {
 				}
 			}
 
-			logger.fine("Completed getting stock quote - releasing Redis resources");
+			logger.info("Completed getting stock quote - releasing Redis resources");
 			jedis.close(); //Release resource
 		} catch (Throwable t) {
 			logException(t);
 			
 			//something went wrong using Redis.  Fall back to the old-fashioned direct approach
 			try {
-				quote = invokeREST("GET", uri);
-				logger.fine("Got quote for "+symbol+" from API Connect");
+				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol);
+				logger.info("Got quote for "+symbol+" from API Connect");
 			} catch (Throwable t2) {
 				logException(t2);
 				return getTestQuote(symbol, ERROR);
@@ -229,8 +248,8 @@ public class StockQuote extends Application {
 			//Redis not configured.  Fall back to the old-fashioned direct approach
 			try {
 				logger.warning("Redis URL not configured, so driving call directly to API Connect");
-				quote = invokeREST("GET", uri);
-				logger.fine("Got quote for "+symbol+" from API Connect");
+				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol);
+				logger.info("Got quote for "+symbol+" from API Connect");
 			} catch (Throwable t3) {
 				logException(t3);
 				return getTestQuote(symbol, ERROR);
@@ -240,61 +259,58 @@ public class StockQuote extends Application {
 		return quote;
 	}
 
-	private boolean isStale(JsonObject quote) {
+	/** When API Connect is unavailable, fall back to calling IEX directly to get the stock quote */
+	public Quote getStockQuoteViaIEX(String symbol) throws IOException {
+		logger.info("Using fallback method getStockQuoteViaIEX");
+		return iexClient.getStockQuoteViaIEX(symbol);
+	}
+
+	private boolean isStale(Quote quote) {
+		if (quote==null) return true;
+
 		long now = System.currentTimeMillis();
-		JsonNumber whenQuoted = (JsonNumber) quote.get("time");
-		if (whenQuoted==null) return true;
-		long then = whenQuoted.longValue();
+		long then = quote.getTime();
+
+		if (then==0) return true; //no time value present in quote
 		long difference = now - then;
 
-		if (logger.isLoggable(Level.FINE)) {
-			String symbol = quote.getString("symbol");
-			logger.fine("Quote for "+symbol+" is "+difference/((double)MINUTE_IN_MILLISECONDS)+" minutes old");
-		}
+		String symbol = quote.getSymbol();
+		logger.info("Quote for "+symbol+" is "+difference/((double)MINUTE_IN_MILLISECONDS)+" minutes old");
 
 		return (difference > cache_interval*MINUTE_IN_MILLISECONDS); //cached quote is too old
     }
 
-	private JsonObject getTestQuote(String symbol, double price) { //in case API Connect or IEX is down or we're rate limited
+	private Quote getTestQuote(String symbol, double price) { //in case API Connect or IEX is down or we're rate limited
 		Date now = new Date();
 		String today = formatter.format(now);
 
-		logger.fine("Building a hard-coded quote (bypassing Redis and API Connect");
+		logger.info("Building a hard-coded quote (bypassing Redis and API Connect");
 
-		JsonObjectBuilder builder = Json.createObjectBuilder();
-		builder.add("symbol", symbol);
-		builder.add("date", today);
-		builder.add("price", price);
+		Quote quote = new Quote(symbol, price, today);
 
-		return builder.build();
+		logger.info("Returning hard-coded quote: "+quote!=null ? quote.toString() : "null");
+
+		return quote;
 	}
 
-	private static JsonObject invokeREST(String verb, String uri) throws IOException {
-		logger.fine("Building URL for REST service: "+uri);
-		URL url = new URL(uri);
+	private Quote getSlowQuote() { //to help test Istio timeout policies; deliberately not put in Redis cache
+		logger.info("Sleeping for one minute for symbol SLOW!");
 
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod(verb);
-		conn.setRequestProperty("Content-Type", "application/json");
-		conn.setDoOutput(true);
+		try {
+			Thread.sleep(SLOW_TIME); //to help test Istio timeout policies
+		} catch (Throwable t) {
+			logException(t);
+		}
 
-		logger.fine("Reading data from REST service");
-		InputStream stream = conn.getInputStream();
+		logger.info("Done sleeping.");
 
-		logger.fine("Parsing REST service response as JSON");
-//		JSONObject json = JSONObject.parse(stream); //JSON4J
-		JsonObject json = Json.createReader(stream).readObject();
-
-		stream.close();
-
-		logger.fine("Returning JSON from REST service");
-		return json;
+		return getTestQuote(SLOW_SYMBOL, TEST_PRICE);
 	}
 
 	private static void logException(Throwable t) {
 		logger.warning(t.getClass().getName()+": "+t.getMessage());
 
-		//only log the stack trace if the level has been set to at least FINE
+		//only log the stack trace if the level has been set to at least the specified level
 		if (logger.isLoggable(Level.INFO)) {
 			StringWriter writer = new StringWriter();
 			t.printStackTrace(new PrintWriter(writer));
