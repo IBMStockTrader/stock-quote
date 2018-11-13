@@ -79,10 +79,10 @@ public class StockQuote extends Application {
 	private @Inject @RestClient APIConnectClient apiConnectClient;
 	private @Inject @RestClient IEXClient iexClient;
 
-	// Override stock quote rest client URL if secret is configured to provide URL
+	// Override API Connect Client URL if secret is configured to provide URL
 	static {
 	    String mpUrlPropName = APIConnectClient.class.getName() + "/mp-rest/url";
-    	String stockQuoteURL = System.getenv("STOCKQUOTE_URL");
+		String stockQuoteURL = System.getenv("STOCKQUOTE_URL");
 		if (stockQuoteURL != null && !stockQuoteURL.isEmpty()) {
 		    logger.info("Using API Connect URL from secret: " + stockQuoteURL);
 			System.setProperty(mpUrlPropName, stockQuoteURL);
