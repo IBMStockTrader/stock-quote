@@ -81,13 +81,13 @@ public class StockQuote extends Application {
 
 	// Override API Connect Client URL if secret is configured to provide URL
 	static {
-	    String mpUrlPropName = APIConnectClient.class.getName() + "/mp-rest/url";
+		String mpUrlPropName = APIConnectClient.class.getName() + "/mp-rest/url";
 		String stockQuoteURL = System.getenv("STOCKQUOTE_URL");
 		if (stockQuoteURL != null && !stockQuoteURL.isEmpty()) {
-		    logger.info("Using API Connect URL from secret: " + stockQuoteURL);
+			logger.info("Using API Connect URL from secret: " + stockQuoteURL);
 			System.setProperty(mpUrlPropName, stockQuoteURL);
 		} else {
-		    logger.info("Using API Connect URL from configuration: " + System.getProperty(mpUrlPropName));
+			logger.info("Using API Connect URL from configuration: " + System.getProperty(mpUrlPropName));
 		}
 	}
 
