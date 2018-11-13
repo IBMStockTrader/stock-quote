@@ -50,6 +50,12 @@ spec:
               secretKeyRef:
                 name: jwt
                 key: issuer
+          - name: STOCKQUOTE_URL
+            valueFrom:
+              secretKeyRef:
+                name: stockquote
+                key: url
+                optional: true
         ports:
           - containerPort: 9080
           - containerPort: 9443
