@@ -30,3 +30,29 @@ occur communicating with Redis), it drives the REST call to **API Connect** as u
 **Redis** so it's there for next time.
 
 The *Java for Redis*, or **Jedis**, library is used for communicating with **Redis**.
+
+ 
+ ### Build and Deploy to ICP
+To build `stock-quote` clone this repo and run:
+```bash
+mvn package
+docker build -t stock-quote:latest -t <ICP_CLUSTER>.icp:8500/stock-trader/stock-quote:latest .
+docker tag stock-quote:latest <ICP_CLUSTER>.icp:8500/stock-trader/stock-quote:latest
+docker push <ICP_CLUSTER>.icp:8500/stock-trader/stock-quote:latest
+```
+
+Use WebSphere Liberty helm chart to deploy Stock Quote microservice to ICP:
+```bash
+helm repo add ibm-charts https://raw.githubusercontent.com/IBM/charts/master/repo/stable/
+helm install ibm-charts/ibm-websphere-liberty -f <VALUES_YAML> -n <RELEASE_NAME> --tls
+```
+
+In practice this means you'll run something like:
+```bash
+docker build -t stock-quote:latest -t mycluster.icp:8500/stock-trader/stock-quote:latest .
+docker tag stock-quote:latest mycluster.icp:8500/stock-trader/stock-quote:latest
+docker push mycluster.icp:8500/stock-trader/stock-quote:latest
+
+helm repo add ibm-charts https://raw.githubusercontent.com/IBM/charts/master/repo/stable/
+helm install ibm-charts/ibm-websphere-liberty -f manifests/stock-quote-values.yaml -n stock-quote --namespace stock-trader --tls
+```
