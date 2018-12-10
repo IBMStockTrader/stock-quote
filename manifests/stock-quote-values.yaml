@@ -69,3 +69,6 @@ ingress:
   path: "/stock-quote/.*"
   annotations: 
     kubernetes.io/ingress.class: "istio"
+
+monitoring:
+  enabled: true
