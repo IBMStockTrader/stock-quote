@@ -82,20 +82,3 @@ spec:
       targetPort: 9443
   selector:
     app: stock-quote
----   
-#Configure the ingress 
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: stock-quote-ingress
-# namespace: stock-trader
-  annotations:
-    kubernetes.io/ingress.class: "istio"
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /stock-quote/.*
-        backend:
-          serviceName: stock-quote-service
-          servicePort: 9080
