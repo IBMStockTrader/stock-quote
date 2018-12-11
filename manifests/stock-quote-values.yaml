@@ -55,20 +55,14 @@ pod:
 service:
   enabled: true
   name: stock-quote-service
-  port: 9080
-  targetPort: 9080
+  port: 9443
+  targetPort: 9443
   type: NodePort
   extraPorts:
-    - name: stock-quote-service-https
+    - name: stock-quote-service-http
       protocol: TCP
-      port: 9443
-      targetPort: 9443
-
-ingress:
-  enabled: true 
-  path: "/stock-quote/.*"
-  annotations: 
-    kubernetes.io/ingress.class: "istio"
+      port: 9080
+      targetPort: 9080
 
 monitoring:
   enabled: true
