@@ -55,14 +55,14 @@ pod:
 service:
   enabled: true
   name: stock-quote-service
-  port: 9443
-  targetPort: 9443
+  port: 9080
+  targetPort: 9080
   type: NodePort
   extraPorts:
-    - name: stock-quote-service-http
+    - name: stock-quote-service-https
       protocol: TCP
-      port: 9080
-      targetPort: 9080
+      port: 9443
+      targetPort: 9443
 
 ingress:
   enabled: true 
