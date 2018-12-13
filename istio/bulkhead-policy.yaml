@@ -1,0 +1,11 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: stock-quote-bulkhead
+spec:
+  host: stock-quote-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1
+

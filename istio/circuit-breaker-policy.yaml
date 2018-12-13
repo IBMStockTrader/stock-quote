@@ -1,0 +1,12 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: stock-quote-circuit-breaker
+spec:
+  host: stock-quote-service
+  trafficPolicy:
+    outlierDetection:
+      consecutiveErrors: 3
+      interval: 5s
+      baseEjectionTime: 5m
+      maxEjectionPercent: 100
