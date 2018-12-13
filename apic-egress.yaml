@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: apic
+spec:
+  hosts:
+  - api.us.apiconnect.ibmcloud.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  resolution: DNS
+  location: MESH_EXTERNAL
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: apic
+spec:
+  hosts:
+  - api.us.apiconnect.ibmcloud.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - api.us.apiconnect.ibmcloud.com
+    route:
+    - destination:
+        host: api.us.apiconnect.ibmcloud.com
+        port:
+          number: 443
+      weight: 100
+
