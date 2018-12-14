@@ -14,7 +14,11 @@
    limitations under the License.
  */
 
-package com.ibm.hybrid.cloud.sample.portfolio;
+package com.ibm.hybrid.cloud.sample.stocktrader.stockquote;
+
+import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.client.APIConnectClient;
+import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.client.IEXClient;
+import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.json.Quote;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -83,7 +87,7 @@ public class StockQuote extends Application {
 	static {
 		String mpUrlPropName = APIConnectClient.class.getName() + "/mp-rest/url";
 		String stockQuoteURL = System.getenv("STOCKQUOTE_URL");
-		if (stockQuoteURL != null && !stockQuoteURL.isEmpty()) {
+		if ((stockQuoteURL != null) && !stockQuoteURL.isEmpty()) {
 			logger.info("Using API Connect URL from secret: " + stockQuoteURL);
 			System.setProperty(mpUrlPropName, stockQuoteURL);
 		} else {
