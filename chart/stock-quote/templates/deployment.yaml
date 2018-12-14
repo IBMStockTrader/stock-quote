@@ -24,6 +24,7 @@ spec:
   template:
     metadata:
       labels:
+        solution: "stock-trader"
         app: "{{  .Chart.Name }}-selector"
         version: "current"
     spec:
