@@ -14,7 +14,7 @@
    limitations under the License.
  */
 
-package com.ibm.hybrid.cloud.sample.portfolio;
+package com.ibm.hybrid.cloud.sample.stocktrader.stockquote.json;
 
 /** JSON-B POJO class representing a Quote JSON object */
 public class Quote {
