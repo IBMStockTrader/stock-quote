@@ -14,7 +14,7 @@
    limitations under the License.
  */
 
-package com.ibm.hybrid.cloud.sample.stocktrader.portfolio.test;
+package com.ibm.hybrid.cloud.sample.stocktrader.stockquote.test;
 
 import static org.junit.Assert.assertTrue;
 
