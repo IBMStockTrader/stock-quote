@@ -14,8 +14,9 @@
    limitations under the License.
  */
 
-package com.ibm.hybrid.cloud.sample.portfolio;
+package com.ibm.hybrid.cloud.sample.stocktrader.stockquote.client;
 
+import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.json.Quote;
 
 import javax.enterprise.context.Dependent;
 import javax.ws.rs.ApplicationPath;
