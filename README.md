@@ -18,15 +18,15 @@ The *stock-quote* microservice gets the price of a specified stock.  It hits an 
 which drives a call to `IEXTrading.com` to get the actual data.
 
 It responds to a `GET /{symbol}` REST request, where you pass in a stock ticker symbol, and it returns
-a JSON object containing that *symbol*, the *price*, and the *date* it was quoted.
+a JSON object containing that *symbol*, the *price*, the *date* and the *time* it was quoted.  The *time*
+field is the number of milliseconds since the start of 1970 (used in determining quote staleness).
 
 For example, if you hit the `http://localhost:9080/stock-quote/IBM` URL, it would return
-`{"symbol": "IBM", "price": 155.23, "date": "2016-06-27"}`
+`{"symbol": "IBM", "price": 155.23, "date": "2016-06-27", "time": 1467028800000}`.
 
-This service uses **Redis** for caching.  When a quote is requested, it first checks to see if the
-answer is in the cache, and if so, whether the quote is less that 24 hours old (Quandl only returns the
-previous business day's closing price), and if so, just uses that.  Otherwise (or if any exceptions
-occur communicating with Redis), it drives the REST call to **API Connect** as usual, then adds it to
-**Redis** so it's there for next time.
+This service uses **Redis** for caching.  When a quote is requested, it first checks to see if it is
+in the cache, and if so, whether it is less that an hour old, and if so, just uses that.  Otherwise
+(or if any exceptions occur communicating with Redis), it drives the REST call to **API Connect** as
+usual, then adds it to **Redis** so it's there for next time.
 
 The *Java for Redis*, or **Jedis**, library is used for communicating with **Redis**.
