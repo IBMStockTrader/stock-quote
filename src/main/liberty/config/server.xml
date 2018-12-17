@@ -24,7 +24,7 @@
     <httpEndpoint httpPort="9080" httpsPort="9443" host="*" id="defaultHttpEndpoint"/>
 
     <keyStore id="defaultKeyStore" password="passw0rd" type="jks"
-         location="${server.config.dir}/resources/security/key.jks" />
+         location="${server.output.dir}/resources/security/key.jks" />
 
     <sslDefault sslRef="RpSSLConfig" />
 
