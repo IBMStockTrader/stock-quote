@@ -16,12 +16,10 @@
 FROM websphere-liberty:microProfile2
 
 COPY src/main/liberty/config /config/
-COPY src/main/liberty/output /output/
 COPY target/stock-quote-1.0-SNAPSHOT.war /config/apps/StockQuote.war
 
 USER root
 RUN chmod g+w /config/apps
-RUN chmod g+w /output/resources/security
 RUN apt-get update
 RUN apt-get install curl -y
 USER 1001
