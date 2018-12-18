@@ -13,7 +13,7 @@
 
 <server description="Stock Quote server">
     <featureManager>
-        <feature>microProfile-2.0</feature> <!-- defines mpJwt-1.0, among others -->
+        <feature>microProfile-2.1</feature> <!-- defines mpJwt-1.0, among others -->
         <feature>appSecurity-2.0</feature>
 <!--    <feature>ldapRegistry-3.0</feature> -->
         <feature>logstashCollector-1.0</feature>
@@ -24,7 +24,7 @@
     <httpEndpoint httpPort="9080" httpsPort="9443" host="*" id="defaultHttpEndpoint"/>
 
     <keyStore id="defaultKeyStore" password="passw0rd" type="jks"
-         location="${server.output.dir}/resources/security/key.jks" />
+         location="${server.config.dir}/resources/security/key.jks" />
 
     <sslDefault sslRef="RpSSLConfig" />
 
