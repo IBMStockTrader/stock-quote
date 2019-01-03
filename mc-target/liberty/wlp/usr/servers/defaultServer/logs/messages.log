@@ -1,0 +1,84 @@
+********************************************************************************
+product = WebSphere Application Server 18.0.0.4 (wlp-1.0.23.cl180420181121-0300)
+wlp.install.dir = /opt/ibm/wlp/
+server.config.dir = /home/default/app/mc-target/liberty/wlp/usr/servers/defaultServer/
+java.home = /home/default/java/jre
+java.version = 1.8.0_191
+java.runtime = Java(TM) SE Runtime Environment (8.0.5.26 - pxa6480sr5fp26-20181115_03(SR5 FP26))
+os = Linux (4.4.0-139-generic; amd64) (en_US)
+process = 1080@mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4
+********************************************************************************
+[1/3/19 15:41:44:699 UTC] 00000001 com.ibm.ws.kernel.launch.internal.FrameworkManager           A CWWKE0001I: The server defaultServer has been launched.
+[1/3/19 15:41:44:881 UTC] 00000001 com.ibm.ws.kernel.launch.internal.FrameworkManager           A CWWKE0100I: This product is licensed for development, and limited production use. The full license terms can be viewed here: https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/wasdev/license/base_ilan/ilan/18.0.0.4/lafiles/en.html
+[1/3/19 15:41:48:531 UTC] 0000001f com.ibm.ws.config.xml.internal.ServerXMLConfiguration        A CWWKG0093A: Processing configuration drop-ins resource: /home/default/app/mc-target/liberty/wlp/usr/servers/defaultServer/configDropins/defaults/install_apps_configuration_1491924271.xml
+[1/3/19 15:41:48:596 UTC] 0000001f com.ibm.ws.config.xml.internal.ServerXMLConfiguration        A CWWKG0093A: Processing configuration drop-ins resource: /home/default/app/mc-target/liberty/wlp/usr/servers/defaultServer/configDropins/defaults/keystore.xml
+[1/3/19 15:41:50:076 UTC] 00000001 com.ibm.ws.kernel.launch.internal.FrameworkManager           I CWWKE0002I: The kernel started after 6.931 seconds
+[1/3/19 15:41:50:240 UTC] 0000002a com.ibm.ws.kernel.feature.internal.FeatureManager            I CWWKF0007I: Feature update started.
+[1/3/19 15:42:02:820 UTC] 0000001f com.ibm.ws.security.ready.internal.SecurityReadyServiceImpl  I CWWKS0007I: The security service is starting...
+[1/3/19 15:42:03:245 UTC] 0000001f .apache.cxf.cxf.core.3.2:1.0.23.cl180420181121-0300(id=152)] I Aries Blueprint packages not available. So namespaces will not be registered
+[1/3/19 15:42:03:252 UTC] 0000001f .apache.cxf.cxf.core.3.2:1.0.23.cl180420181121-0300(id=152)] I Aries Blueprint packages not available. So namespaces will not be registered
+[1/3/19 15:42:04:425 UTC] 0000002b com.ibm.ws.security.token.ltpa.internal.LTPAKeyInfoManager   I CWWKS4103I: Creating the LTPA keys. This may take a few seconds.
+[1/3/19 15:42:04:489 UTC] 0000001f ibm.ws.security.authentication.internal.jaas.JAASServiceImpl I CWWKS1123I: The collective authentication plugin with class name NullCollectiveAuthenticationPlugin has been activated. 
+[1/3/19 15:42:05:795 UTC] 0000001f com.ibm.ws.app.manager.internal.monitor.DropinMonitor        A CWWKZ0058I: Monitoring dropins for applications.
+[1/3/19 15:42:06:979 UTC] 0000001f com.ibm.ws.cache.ServerCache                                 I DYNA1001I: WebSphere Dynamic Cache instance named baseCache initialized successfully.
+[1/3/19 15:42:06:983 UTC] 0000001f com.ibm.ws.cache.ServerCache                                 I DYNA1071I: The cache provider default is being used.
+[1/3/19 15:42:06:985 UTC] 0000001f com.ibm.ws.cache.CacheServiceImpl                            I DYNA1056I: Dynamic Cache (object cache) initialized successfully.
+[1/3/19 15:42:07:311 UTC] 0000001f com.ibm.ws.security.jwt.internal.ConsumerImpl                I CWWKS6012I: The JSON Web Token (JWT) consumer service is available.
+[1/3/19 15:42:07:328 UTC] 0000001f com.ibm.ws.security.jwt.web.JwtEndpointServices              I CWWKS6002I: The JSON Web Token (JWT) endpoint service is available.
+[1/3/19 15:42:07:342 UTC] 0000001f .ws.security.mp.jwt.v11.config.impl.MpConfigProxyServiceImpl I CWWKS5775I: The MicroProfile JWT version 1.1 mpConfigProxy processed successfully.
+[1/3/19 15:42:07:351 UTC] 0000001f com.ibm.ws.security.mp.jwt.impl.MicroProfileJwtConfigImpl    I CWWKS5500I: The MicroProfile JWT configuration [defaultMpJwt] was successfully processed.
+[1/3/19 15:42:07:353 UTC] 0000001f com.ibm.ws.security.mp.jwt.impl.MicroProfileJwtConfigImpl    I CWWKS5500I: The MicroProfile JWT configuration [myMpJwt] was successfully processed.
+[1/3/19 15:42:07:355 UTC] 0000001f com.ibm.ws.security.mp.jwt.impl.MicroProfileJwtServiceImpl   I CWWKS5500I: The MicroProfile JWT configuration [MicroProfileJwtService] was successfully processed.
+[1/3/19 15:42:07:531 UTC] 0000002b com.ibm.ws.security.token.ltpa.internal.LTPAKeyInfoManager   A CWWKS4104A: LTPA keys created in 3.106 seconds. LTPA key file: /home/default/app/mc-target/liberty/wlp/usr/servers/defaultServer/resources/security/ltpa.keys
+[1/3/19 15:42:07:538 UTC] 0000002b com.ibm.ws.security.token.ltpa.internal.LTPAKeyCreateTask    I CWWKS4105I: LTPA configuration is ready after 3.116 seconds.
+[1/3/19 15:42:07:814 UTC] 0000002d com.ibm.ws.tcpchannel.internal.TCPChannel                    I CWWKO0219I: TCP Channel defaultHttpEndpoint has been started and is now listening for requests on host *  (IPv4) port 9080.
+[1/3/19 15:42:07:833 UTC] 0000002d com.ibm.ws.tcpchannel.internal.TCPChannel                    I CWWKO0219I: TCP Channel defaultHttpEndpoint-ssl has been started and is now listening for requests on host *  (IPv4) port 9443.
+[1/3/19 15:42:08:722 UTC] 0000001f com.ibm.ws.session.WASSessionCore                            I SESN8501I: The session manager did not find a persistent storage location; HttpSession objects will be stored in the local application server's memory.
+[1/3/19 15:42:10:694 UTC] 0000004e com.ibm.ws.app.manager.AppMessageHelper                      W CWWKZ0014W: The application StockQuote could not be started as it could not be found at location StockQuote.war.
+[1/3/19 15:42:10:776 UTC] 00000050 com.ibm.ws.app.manager.AppMessageHelper                      I CWWKZ0018I: Starting application stock-quote.
+[1/3/19 15:42:12:061 UTC] 0000002d com.ibm.ws.webcontainer.osgi.webapp.WebGroup                 I SRVE0169I: Loading Web Module: PublicMicroProfileMetrics.
+[1/3/19 15:42:12:064 UTC] 0000002b com.ibm.ws.webcontainer.osgi.webapp.WebGroup                 I SRVE0169I: Loading Web Module: ibm/api.
+[1/3/19 15:42:12:078 UTC] 0000002d com.ibm.ws.webcontainer                                      I SRVE0250I: Web Module PublicMicroProfileMetrics has been bound to default_host.
+[1/3/19 15:42:12:066 UTC] 0000002c com.ibm.ws.webcontainer.osgi.webapp.WebGroup                 I SRVE0169I: Loading Web Module: com.ibm.ws.security.jwt.
+[1/3/19 15:42:12:065 UTC] 00000031 com.ibm.ws.webcontainer.osgi.webapp.WebGroup                 I SRVE0169I: Loading Web Module: health.
+[1/3/19 15:42:12:086 UTC] 0000002c com.ibm.ws.webcontainer                                      I SRVE0250I: Web Module com.ibm.ws.security.jwt has been bound to default_host.
+[1/3/19 15:42:12:090 UTC] 00000031 com.ibm.ws.webcontainer                                      I SRVE0250I: Web Module health has been bound to default_host.
+[1/3/19 15:42:12:078 UTC] 0000002b com.ibm.ws.webcontainer                                      I SRVE0250I: Web Module ibm/api has been bound to default_host.
+[1/3/19 15:42:12:063 UTC] 0000002f com.ibm.ws.webcontainer.osgi.webapp.WebGroup                 I SRVE0169I: Loading Web Module: OpenAPIUI.
+[1/3/19 15:42:12:091 UTC] 0000002f com.ibm.ws.webcontainer                                      I SRVE0250I: Web Module OpenAPIUI has been bound to default_host.
+[1/3/19 15:42:12:088 UTC] 0000002d com.ibm.ws.http.internal.VirtualHostImpl                     A CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/metrics/
+[1/3/19 15:42:12:099 UTC] 00000031 com.ibm.ws.http.internal.VirtualHostImpl                     A CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/health/
+[1/3/19 15:42:12:106 UTC] 0000002c com.ibm.ws.http.internal.VirtualHostImpl                     A CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/jwt/
+[1/3/19 15:42:12:107 UTC] 0000002b com.ibm.ws.http.internal.VirtualHostImpl                     A CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/ibm/api/
+[1/3/19 15:42:12:108 UTC] 0000002f com.ibm.ws.http.internal.VirtualHostImpl                     A CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/openapi/ui/
+[1/3/19 15:42:12:230 UTC] 0000004e com.ibm.ws.session.WASSessionCore                            I SESN0176I: A new session context will be created for application key default_host/jwt
+[1/3/19 15:42:12:232 UTC] 0000004f com.ibm.ws.session.WASSessionCore                            I SESN0176I: A new session context will be created for application key default_host/ibm/api
+[1/3/19 15:42:12:238 UTC] 0000004d com.ibm.ws.session.WASSessionCore                            I SESN0176I: A new session context will be created for application key default_host/health
+[1/3/19 15:42:12:247 UTC] 0000004e com.ibm.ws.util                                              I SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[1/3/19 15:42:12:253 UTC] 00000031 com.ibm.ws.session.WASSessionCore                            I SESN0176I: A new session context will be created for application key default_host/metrics
+[1/3/19 15:42:12:255 UTC] 0000002b com.ibm.ws.session.WASSessionCore                            I SESN0176I: A new session context will be created for application key default_host/openapi/ui
+[1/3/19 15:42:12:258 UTC] 00000031 com.ibm.ws.util                                              I SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[1/3/19 15:42:12:260 UTC] 0000004f com.ibm.ws.util                                              I SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[1/3/19 15:42:12:266 UTC] 0000002b com.ibm.ws.util                                              I SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[1/3/19 15:42:12:267 UTC] 0000004d com.ibm.ws.util                                              I SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[1/3/19 15:42:12:272 UTC] 00000031 com.ibm.ws.cache.CacheServiceImpl                            I DYNA1056I: Dynamic Cache (object cache) initialized successfully.
+[1/3/19 15:42:12:380 UTC] 00000032 com.ibm.ws.webcontainer.osgi.webapp.WebGroup                 I SRVE0169I: Loading Web Module: MicroProfileOpenAPI.
+[1/3/19 15:42:12:387 UTC] 00000032 com.ibm.ws.webcontainer                                      I SRVE0250I: Web Module MicroProfileOpenAPI has been bound to default_host.
+[1/3/19 15:42:12:390 UTC] 00000032 com.ibm.ws.http.internal.VirtualHostImpl                     A CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/openapi/
+[1/3/19 15:42:12:404 UTC] 0000004d com.ibm.ws.session.WASSessionCore                            I SESN0176I: A new session context will be created for application key default_host/openapi
+[1/3/19 15:42:12:405 UTC] 0000004d com.ibm.ws.util                                              I SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[1/3/19 15:42:12:505 UTC] 00000031 com.ibm.ws.webcontainer.servlet                              I SRVE0242I: [com.ibm.ws.microprofile.metrics.public] [/metrics] [PublicMetricsRESTProxyServlet]: Initialization successful.
+[1/3/19 15:42:12:505 UTC] 0000004d com.ibm.ws.webcontainer.servlet                              I SRVE0242I: [com.ibm.ws.microprofile.openapi] [/openapi] [OpenAPIServlet]: Initialization successful.
+[1/3/19 15:42:13:586 UTC] 00000050 com.ibm.ws.microprofile.openapi.ApplicationProcessor         I CWWKO1660I: The application stock-quote was processed and an OpenAPI document was produced.
+[1/3/19 15:42:13:772 UTC] 00000050 org.jboss.weld.Version                                       I WELD-000900: 3.0.5 (Final)
+[1/3/19 15:42:16:882 UTC] 00000050 com.ibm.ws.webcontainer.osgi.webapp.WebGroup                 I SRVE0169I: Loading Web Module: Stock Quote.
+[1/3/19 15:42:16:884 UTC] 00000050 com.ibm.ws.webcontainer                                      I SRVE0250I: Web Module Stock Quote has been bound to default_host.
+[1/3/19 15:42:16:885 UTC] 00000050 com.ibm.ws.http.internal.VirtualHostImpl                     A CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/stock-quote/
+[1/3/19 15:42:16:895 UTC] 00000096 com.ibm.ws.session.WASSessionCore                            I SESN0176I: A new session context will be created for application key default_host/stock-quote
+[1/3/19 15:42:16:902 UTC] 00000096 com.ibm.ws.util                                              I SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[1/3/19 15:42:16:913 UTC] 00000050 com.ibm.ws.app.manager.AppMessageHelper                      A CWWKZ0001I: Application stock-quote started in 6.137 seconds.
+[1/3/19 15:42:17:214 UTC] 00000096 com.ibm.ws.webcontainer.security.ServletStartedListener      I CWWKS9123I:  For URL /* in application stock-quote, the following HTTP methods are uncovered, and not accessible: POST PUT DELETE HEAD OPTIONS TRACE 
+[1/3/19 15:42:17:457 UTC] 00000093 com.ibm.ws.webcontainer.osgi.mbeans.PluginGenerator          I SRVE9103I: A configuration file for a web server plugin was automatically generated for this server at /home/default/app/mc-target/liberty/wlp/usr/servers/defaultServer/logs/state/plugin-cfg.xml.
+[1/3/19 15:42:40:591 UTC] 0000002a com.ibm.ws.kernel.feature.internal.FeatureManager            A CWWKF0012I: The server installed the following features: [jsonb-1.0, mpFaultTolerance-1.1, microProfile-2.1, servlet-4.0, ssl-1.0, jndi-1.0, logstashCollector-1.0, cdi-2.0, mpHealth-1.0, jsonp-1.1, appSecurity-2.0, opentracing-1.2, mpConfig-1.3, jaxrsClient-2.1, jaxrs-2.1, concurrent-1.0, jwt-1.0, mpRestClient-1.1, mpMetrics-1.1, mpOpenTracing-1.2, mpJwt-1.1, json-1.0, mpOpenAPI-1.0, distributedMap-1.0].
+[1/3/19 15:42:40:593 UTC] 0000002a com.ibm.ws.kernel.feature.internal.FeatureManager            I CWWKF0008I: Feature update completed in 50.523 seconds.
+[1/3/19 15:42:40:594 UTC] 0000002a com.ibm.ws.kernel.feature.internal.FeatureManager            A CWWKF0011I: The server defaultServer is ready to run a smarter planet.

@@ -1,0 +1,77 @@
+JVMSHRC287E Persistent cache cannot be located on a networked file system. Either select "nonpersistent" or a different cacheDir.
+JVMSHRC686I Failed to startup shared class cache. Continue without using it as -Xshareclasses:nonfatal is specified
+Launching defaultServer (WebSphere Application Server 18.0.0.4/wlp-1.0.23.cl180420181121-0300) on IBM J9 VM, version 8.0.5.26 - pxa6480sr5fp26-20181115_03(SR5 FP26) (en_US)
+[AUDIT   ] CWWKE0001I: The server defaultServer has been launched.
+[AUDIT   ] CWWKE0100I: This product is licensed for development, and limited production use. The full license terms can be viewed here: https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/wasdev/license/base_ilan/ilan/18.0.0.4/lafiles/en.html
+[AUDIT   ] CWWKG0093A: Processing configuration drop-ins resource: /home/default/app/mc-target/liberty/wlp/usr/servers/defaultServer/configDropins/defaults/install_apps_configuration_1491924271.xml
+[AUDIT   ] CWWKG0093A: Processing configuration drop-ins resource: /home/default/app/mc-target/liberty/wlp/usr/servers/defaultServer/configDropins/defaults/keystore.xml
+[INFO    ] CWWKE0002I: The kernel started after 6.931 seconds
+[INFO    ] CWWKF0007I: Feature update started.
+[INFO    ] CWWKS0007I: The security service is starting...
+[INFO    ] Aries Blueprint packages not available. So namespaces will not be registered
+[INFO    ] Aries Blueprint packages not available. So namespaces will not be registered
+[INFO    ] CWWKS4103I: Creating the LTPA keys. This may take a few seconds.
+[INFO    ] CWWKS1123I: The collective authentication plugin with class name NullCollectiveAuthenticationPlugin has been activated. 
+[AUDIT   ] CWWKZ0058I: Monitoring dropins for applications.
+[INFO    ] DYNA1001I: WebSphere Dynamic Cache instance named baseCache initialized successfully.
+[INFO    ] DYNA1071I: The cache provider default is being used.
+[INFO    ] DYNA1056I: Dynamic Cache (object cache) initialized successfully.
+[INFO    ] CWWKS6012I: The JSON Web Token (JWT) consumer service is available.
+[INFO    ] CWWKS6002I: The JSON Web Token (JWT) endpoint service is available.
+[INFO    ] CWWKS5775I: The MicroProfile JWT version 1.1 mpConfigProxy processed successfully.
+[INFO    ] CWWKS5500I: The MicroProfile JWT configuration [defaultMpJwt] was successfully processed.
+[INFO    ] CWWKS5500I: The MicroProfile JWT configuration [myMpJwt] was successfully processed.
+[INFO    ] CWWKS5500I: The MicroProfile JWT configuration [MicroProfileJwtService] was successfully processed.
+[AUDIT   ] CWWKS4104A: LTPA keys created in 3.106 seconds. LTPA key file: /home/default/app/mc-target/liberty/wlp/usr/servers/defaultServer/resources/security/ltpa.keys
+[INFO    ] CWWKS4105I: LTPA configuration is ready after 3.116 seconds.
+[INFO    ] CWWKO0219I: TCP Channel defaultHttpEndpoint has been started and is now listening for requests on host *  (IPv4) port 9080.
+[INFO    ] CWWKO0219I: TCP Channel defaultHttpEndpoint-ssl has been started and is now listening for requests on host *  (IPv4) port 9443.
+[INFO    ] SESN8501I: The session manager did not find a persistent storage location; HttpSession objects will be stored in the local application server's memory.
+[WARNING ] CWWKZ0014W: The application StockQuote could not be started as it could not be found at location StockQuote.war.
+[INFO    ] CWWKZ0018I: Starting application stock-quote.
+[INFO    ] SRVE0169I: Loading Web Module: PublicMicroProfileMetrics.
+[INFO    ] SRVE0169I: Loading Web Module: ibm/api.
+[INFO    ] SRVE0250I: Web Module PublicMicroProfileMetrics has been bound to default_host.
+[INFO    ] SRVE0169I: Loading Web Module: com.ibm.ws.security.jwt.
+[INFO    ] SRVE0250I: Web Module com.ibm.ws.security.jwt has been bound to default_host.
+[INFO    ] SRVE0169I: Loading Web Module: health.
+[INFO    ] SRVE0250I: Web Module health has been bound to default_host.
+[INFO    ] SRVE0250I: Web Module ibm/api has been bound to default_host.
+[INFO    ] SRVE0169I: Loading Web Module: OpenAPIUI.
+[INFO    ] SRVE0250I: Web Module OpenAPIUI has been bound to default_host.
+[AUDIT   ] CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/metrics/
+[AUDIT   ] CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/health/
+[AUDIT   ] CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/jwt/
+[AUDIT   ] CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/ibm/api/
+[AUDIT   ] CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/openapi/ui/
+[INFO    ] SESN0176I: A new session context will be created for application key default_host/jwt
+[INFO    ] SESN0176I: A new session context will be created for application key default_host/ibm/api
+[INFO    ] SESN0176I: A new session context will be created for application key default_host/health
+[INFO    ] SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[INFO    ] SESN0176I: A new session context will be created for application key default_host/metrics
+[INFO    ] SESN0176I: A new session context will be created for application key default_host/openapi/ui
+[INFO    ] SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[INFO    ] SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[INFO    ] SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[INFO    ] SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[INFO    ] DYNA1056I: Dynamic Cache (object cache) initialized successfully.
+[INFO    ] SRVE0169I: Loading Web Module: MicroProfileOpenAPI.
+[INFO    ] SRVE0250I: Web Module MicroProfileOpenAPI has been bound to default_host.
+[AUDIT   ] CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/openapi/
+[INFO    ] SESN0176I: A new session context will be created for application key default_host/openapi
+[INFO    ] SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[INFO    ] SRVE0242I: [com.ibm.ws.microprofile.openapi] [/openapi] [OpenAPIServlet]: Initialization successful.
+[INFO    ] SRVE0242I: [com.ibm.ws.microprofile.metrics.public] [/metrics] [PublicMetricsRESTProxyServlet]: Initialization successful.
+[INFO    ] CWWKO1660I: The application stock-quote was processed and an OpenAPI document was produced.
+[INFO    ] WELD-000900: 3.0.5 (Final)
+[INFO    ] SRVE0169I: Loading Web Module: Stock Quote.
+[INFO    ] SRVE0250I: Web Module Stock Quote has been bound to default_host.
+[AUDIT   ] CWWKT0016I: Web application available (default_host): http://mc-stockquote-dd573bf0-0ed7-11e9-858c-idc-56979b6676-2hfc4:9080/stock-quote/
+[INFO    ] SESN0176I: A new session context will be created for application key default_host/stock-quote
+[INFO    ] SESN0172I: The session manager is using the Java default SecureRandom implementation for session ID generation.
+[AUDIT   ] CWWKZ0001I: Application stock-quote started in 6.137 seconds.
+[INFO    ] CWWKS9123I:  For URL /* in application stock-quote, the following HTTP methods are uncovered, and not accessible: POST PUT DELETE HEAD OPTIONS TRACE 
+[INFO    ] SRVE9103I: A configuration file for a web server plugin was automatically generated for this server at /home/default/app/mc-target/liberty/wlp/usr/servers/defaultServer/logs/state/plugin-cfg.xml.
+[AUDIT   ] CWWKF0012I: The server installed the following features: [jsonb-1.0, mpFaultTolerance-1.1, microProfile-2.1, servlet-4.0, ssl-1.0, jndi-1.0, logstashCollector-1.0, cdi-2.0, mpHealth-1.0, jsonp-1.1, appSecurity-2.0, opentracing-1.2, mpConfig-1.3, jaxrsClient-2.1, jaxrs-2.1, concurrent-1.0, jwt-1.0, mpRestClient-1.1, mpMetrics-1.1, mpOpenTracing-1.2, mpJwt-1.1, json-1.0, mpOpenAPI-1.0, distributedMap-1.0].
+[INFO    ] CWWKF0008I: Feature update completed in 50.523 seconds.
+[AUDIT   ] CWWKF0011I: The server defaultServer is ready to run a smarter planet.

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<liberty-plugin-config>
+    <activeBuildProfiles>
+        <profileId>microclimate</profileId>
+    </activeBuildProfiles>
+    <installDirectory>/opt/ibm/wlp</installDirectory>
+    <serverDirectory>/microclimate-workspace/stockquote/mc-target/liberty/wlp/usr/servers/defaultServer</serverDirectory>
+    <userDirectory>/microclimate-workspace/stockquote/mc-target/liberty/wlp/usr</userDirectory>
+    <serverOutputDirectory>/microclimate-workspace/stockquote/mc-target/liberty/wlp/usr/servers/defaultServer</serverOutputDirectory>
+    <serverName>defaultServer</serverName>
+    <configDirectory>/microclimate-workspace/stockquote/src/main/liberty/config</configDirectory>
+    <configFile>/microclimate-workspace/stockquote/src/main/liberty/config/server.xml</configFile>
+    <bootstrapProperties>
+        <app.location>stock-quote-1.0-SNAPSHOT.war</app.location>
+        <server.start.wait.time>90</server.start.wait.time>
+    </bootstrapProperties>
+    <jvmOptionsFile>/microclimate-workspace/stockquote/src/main/liberty/config/jvm.options</jvmOptionsFile>
+    <appsDirectory>apps</appsDirectory>
+    <looseApplication>true</looseApplication>
+    <stripVersion>false</stripVersion>
+    <installAppPackages>project</installAppPackages>
+    <applicationFilename>stock-quote-1.0-SNAPSHOT.war.xml</applicationFilename>
+    <assemblyInstallDirectory>/microclimate-workspace/stockquote/mc-target/liberty</assemblyInstallDirectory>
+    <refresh>false</refresh>
+    <installAppsConfigDropins>/microclimate-workspace/stockquote/mc-target/liberty/wlp/usr/servers/defaultServer/configDropins/defaults/install_apps_configuration_1491924271.xml</installAppsConfigDropins>
+    <projectType>war</projectType>
+    <projectCompileDependency>redis.clients:jedis:3.0.0</projectCompileDependency>
+    <projectCompileDependency>org.slf4j:slf4j-api:1.7.22</projectCompileDependency>
+    <projectCompileDependency>org.apache.commons:commons-pool2:2.4.3</projectCompileDependency>
+    <warSourceDirectory>/microclimate-workspace/stockquote/src/main/webapp</warSourceDirectory>
+</liberty-plugin-config>

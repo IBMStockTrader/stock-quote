@@ -1,0 +1,4 @@
+com/ibm/hybrid/cloud/sample/stocktrader/stockquote/StockQuote.class
+com/ibm/hybrid/cloud/sample/stocktrader/stockquote/json/Quote.class
+com/ibm/hybrid/cloud/sample/stocktrader/stockquote/client/APIConnectClient.class
+com/ibm/hybrid/cloud/sample/stocktrader/stockquote/client/IEXClient.class
