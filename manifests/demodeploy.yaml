@@ -29,7 +29,7 @@ spec:
       containers:
       - name: stock-quote
 #       image: stock-quote:latest # Microservice Builder
-       image: bigloon.icp:8500/stock-trader/stock-quote:demo # IBM Cloud Private
+        image: bigloon.icp:8500/stock-trader/stock-quote:demo # IBM Cloud Private
 #       image: registry.ng.bluemix.net/stock_trader/stock-quote:latest # IBM Container Service
 #       Note: this manifests/deploy.yaml will be used when we want to deploy this directly using kubectl or a helm chart. 
 #             Microclimate uses the Charts folder so we can actually have both options
