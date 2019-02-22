@@ -103,16 +103,16 @@ spec:
     app: stock-quote
 ---
 #Deploy the autoscaler
- ---
+---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: stock-quote
 spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: stock-quote
   maxReplicas: 10
   minReplicas: 2
   targetCPUUtilizationPercentage: 50
-  scaleTargetRef:
-    apiVersion: v1
-    kind: Deployment
-    name: stock-quote
