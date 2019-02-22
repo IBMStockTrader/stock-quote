@@ -101,3 +101,18 @@ spec:
       targetPort: 9443
   selector:
     app: stock-quote
+---
+#Deploy the autoscaler
+ ---
+ apiVersion: autoscaling/v1
+ kind: HorizontalPodAutoscaler
+ metadata:
+   name: stock-quote
+ spec:
+   maxReplicas: 10
+   minReplicas: 2
+   targetCPUUtilizationPercentage: 50
+   scaleTargetRef:
+     apiVersion: v1
+     kind: Deployment
+     name: stock-quote
