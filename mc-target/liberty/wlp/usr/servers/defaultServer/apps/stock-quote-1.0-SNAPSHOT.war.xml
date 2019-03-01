@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<archive>
-    <dir sourceOnDisk="/microclimate-workspace/stockquote/src/main/webapp" targetInArchive="/"/>
-    <dir sourceOnDisk="/home/default/app/mc-target/classes" targetInArchive="/WEB-INF/classes"/>
-    <file sourceOnDisk="/home/default/.m2/repository/redis/clients/jedis/3.0.0/jedis-3.0.0.jar" targetInArchive="/WEB-INF/lib/jedis-3.0.0.jar"/>
-    <file sourceOnDisk="/home/default/.m2/repository/org/slf4j/slf4j-api/1.7.22/slf4j-api-1.7.22.jar" targetInArchive="/WEB-INF/lib/slf4j-api-1.7.22.jar"/>
-    <file sourceOnDisk="/home/default/.m2/repository/org/apache/commons/commons-pool2/2.4.3/commons-pool2-2.4.3.jar" targetInArchive="/WEB-INF/lib/commons-pool2-2.4.3.jar"/>
-    <file sourceOnDisk="/microclimate-workspace/stockquote/mc-target/liberty-maven/resources/META-INF/MANIFEST.MF" targetInArchive="/META-INF/MANIFEST.MF"/>
-</archive>
