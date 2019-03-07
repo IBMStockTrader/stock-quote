@@ -17,14 +17,18 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: stock-quote
-# namespace: stock-trader
+  labels:
+    solution: stock-trader
+  annotations: { 
+    prism.subkind: Liberty
+  }
 spec:
   replicas: 1
   template:
     metadata:
       labels:
         app: stock-quote
-        solution: stock-trader
+#        solution: stock-trader
     spec:
       containers:
       - name: stock-quote
@@ -60,6 +64,25 @@ spec:
           - containerPort: 9080
           - containerPort: 9443
         imagePullPolicy: Always
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9080
+          initialDelaySeconds: 60
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
 ---
 #Deploy the service
 apiVersion: v1
@@ -69,6 +92,7 @@ metadata:
 # namespace: stock-trader
   labels:
     app: stock-quote
+    solution: stock-trader
 spec:
   type: NodePort
   ports:
@@ -82,3 +106,19 @@ spec:
       targetPort: 9443
   selector:
     app: stock-quote
+---
+#Deploy the autoscaler
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: stock-quote
+  labels:
+    solution: stock-trader
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: stock-quote
+  maxReplicas: 10
+  minReplicas: 2
+  targetCPUUtilizationPercentage: 50
