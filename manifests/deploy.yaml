@@ -82,13 +82,13 @@ spec:
             path: /health
             port: 9080
           initialDelaySeconds: 30
-          periodSeconds: 5
+          periodSeconds: 6
         livenessProbe:
           httpGet:
             path: /health
             port: 9080
           initialDelaySeconds: 60
-          periodSeconds: 5
+          periodSeconds: 6
         resources:
           limits:
             cpu: 500m
@@ -107,7 +107,6 @@ metadata:
     app: stock-quote
     solution: stock-trader
 spec:
-  type: NodePort
   ports:
     - name: http
       protocol: TCP
@@ -134,4 +133,4 @@ spec:
     name: stock-quote
   maxReplicas: 10
   minReplicas: 2
-  targetCPUUtilizationPercentage: 50
+  targetCPUUtilizationPercentage: 60
