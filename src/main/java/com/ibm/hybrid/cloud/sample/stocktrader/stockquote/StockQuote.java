@@ -1,5 +1,5 @@
 /*
-       Copyright 2017 IBM Corp All Rights Reserved
+       Copyright 2017-2019 IBM Corp All Rights Reserved
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -86,12 +86,21 @@ public class StockQuote extends Application {
 	// Override API Connect Client URL if secret is configured to provide URL
 	static {
 		String mpUrlPropName = APIConnectClient.class.getName() + "/mp-rest/url";
-		String stockQuoteURL = System.getenv("STOCKQUOTE_URL");
-		if ((stockQuoteURL != null) && !stockQuoteURL.isEmpty()) {
-			logger.info("Using API Connect URL from secret: " + stockQuoteURL);
-			System.setProperty(mpUrlPropName, stockQuoteURL);
+		String urlFromEnv = System.getenv("API_CONNECT_URL");
+		if ((urlFromEnv != null) && !urlFromEnv.isEmpty()) {
+			logger.info("Using API Connect URL from config map: " + urlFromEnv);
+			System.setProperty(mpUrlPropName, urlFromEnv);
 		} else {
-			logger.info("Using API Connect URL from configuration: " + System.getProperty(mpUrlPropName));
+			logger.info("API Connect URL not found from env var from config map, so defaulting to value in jvm.options: " + System.getProperty(mpUrlPropName));
+		}
+
+		mpUrlPropName = IEXClient.class.getName() + "/mp-rest/url";
+		urlFromEnv = System.getenv("IEX_URL");
+		if ((urlFromEnv != null) && !urlFromEnv.isEmpty()) {
+			logger.info("Using IEX URL from config map: " + urlFromEnv);
+			System.setProperty(mpUrlPropName, urlFromEnv);
+		} else {
+			logger.info("IEX URL not found from env var from config map, so defaulting to value in jvm.options: " + System.getProperty(mpUrlPropName));
 		}
 	}
 
