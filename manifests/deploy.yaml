@@ -19,9 +19,8 @@ metadata:
   name: stock-quote
   labels:
     app: stock-trader
-  annotations: { 
+  annotations:
     prism.subkind: Liberty
-  }
 spec:
   replicas: 1
   template:
@@ -36,7 +35,7 @@ spec:
       - name: stock-quote
 #       image: stock-quote:latest # Microservice Builder
 #       image: mycluster.icp:8500/stock-trader/stock-quote:latest # IBM Cloud Private
-#       image: registry.ng.bluemix.net/stock_trader/stock-quote:latest # IBM Container Service
+#       image: registry.ng.bluemix.net/stock_trader/stock-quote:latest # IBM Kubernetes Service
 #       Note: this manifests/deploy.yaml will be used when we want to deploy this directly using kubectl or a helm chart. 
 #             Microclimate uses the Charts folder so we can actually have both options
         image: ibmstocktrader/stock-quote:latest # DockerHub
@@ -74,6 +73,10 @@ spec:
                 name: urls
                 key: iex
                 optional: true
+          - name: WLP_LOGGING_CONSOLE_FORMAT
+            value: json
+          - name: WLP_LOGGING_CONSOLE_SOURCE
+            value: message,ffdc
         ports:
           - containerPort: 9080
           - containerPort: 9443
@@ -83,13 +86,17 @@ spec:
             path: /health
             port: 9080
           initialDelaySeconds: 30
-          periodSeconds: 6
+          periodSeconds: 15
+          successThreshold: 1
+          failureThreshold: 3
         livenessProbe:
           httpGet:
             path: /health
             port: 9080
           initialDelaySeconds: 60
-          periodSeconds: 6
+          periodSeconds: 15
+          successThreshold: 1
+          failureThreshold: 5 # Allow a little time to exec into the pod to grab FFDCs before it's killed
         resources:
           limits:
             cpu: 500m
