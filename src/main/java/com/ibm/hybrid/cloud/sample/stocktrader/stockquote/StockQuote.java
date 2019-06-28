@@ -79,6 +79,7 @@ public class StockQuote extends Application {
 
 	private long cache_interval = 60; //default to 60 minutes
 	private SimpleDateFormat formatter = null;
+	private static String iexApiKey = null;
 
 	private @Inject @RestClient APIConnectClient apiConnectClient;
 	private @Inject @RestClient IEXClient iexClient;
@@ -101,6 +102,11 @@ public class StockQuote extends Application {
 			System.setProperty(mpUrlPropName, urlFromEnv);
 		} else {
 			logger.info("IEX URL not found from env var from config map, so defaulting to value in jvm.options: " + System.getProperty(mpUrlPropName));
+		}
+	
+		iexApiKey = System.getenv("IEX_API_KEY");
+		if ((iexApiKey == null) || iexApiKey.isEmpty()) {
+			logger.warning("No API key provided for IEX.  If API Connect isn't available, fallback to direct calls to IEX will fail");
 		}
 	}
 
@@ -287,7 +293,7 @@ public class StockQuote extends Application {
 	/** When API Connect is unavailable, fall back to calling IEX directly to get the stock quote */
 	public Quote getStockQuoteViaIEX(String symbol) throws IOException {
 		logger.info("Using fallback method getStockQuoteViaIEX");
-		return iexClient.getStockQuoteViaIEX(symbol);
+		return iexClient.getStockQuoteViaIEX(symbol, iexApiKey);
 	}
 
 	private boolean isStale(Quote quote) {
