@@ -15,8 +15,9 @@
 -->
 
 The *stock-quote* microservice gets the price of a specified stock.  It hits an API in **API Connect**,
-which drives a call to `https://api.iextrading.com/1.0/stock/{symbol}/quote` to get the actual data,
-then mediates the structure of the returned JSON as described below.
+which drives a call to `https://cloud.iexapis.com/stable/stock/{symbol}/quote` to get the actual data,
+then mediates the structure of the returned JSON as described below.  Note that an API key needs to be
+passed as a query param named `token` (the API Connect impl does that for you).
 
 It responds to a `GET /{symbol}` REST request, where you pass in a stock ticker symbol, and it returns
 a JSON object containing that *symbol*, the *price*, the *date* and the *time* it was quoted.  The *time*
