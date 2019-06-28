@@ -45,6 +45,12 @@ spec:
               secretKeyRef:
                 name: redis
                 key: url
+          - name: CACHE_INTERVAL
+            valueFrom:
+              secretKeyRef:
+                name: redis
+                key: cache-interval
+                optional: true
           - name: JWT_AUDIENCE
             valueFrom:
               secretKeyRef:
@@ -58,8 +64,8 @@ spec:
           - name: STOCKQUOTE_URL
             valueFrom:
               secretKeyRef:
-                name: stockquote
-                key: url
+                name: urls
+                key: stockquote
                 optional: true
           - name: API_CONNECT_URL
             valueFrom:
@@ -72,6 +78,12 @@ spec:
               configMapKeyRef:
                 name: urls
                 key: iex
+                optional: true
+          - name: IEX_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: redis
+                key: iex-api-key
                 optional: true
           - name: WLP_LOGGING_CONSOLE_FORMAT
             value: json
