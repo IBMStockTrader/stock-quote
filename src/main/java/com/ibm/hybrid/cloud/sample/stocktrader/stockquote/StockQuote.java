@@ -87,7 +87,7 @@ public class StockQuote extends Application {
 	// Override API Connect Client URL if secret is configured to provide URL
 	static {
 		String mpUrlPropName = APIConnectClient.class.getName() + "/mp-rest/url";
-		String urlFromEnv = System.getenv("API_CONNECT_URL");
+		String urlFromEnv = System.getenv("APIC_URL");
 		if ((urlFromEnv != null) && !urlFromEnv.isEmpty()) {
 			logger.info("Using API Connect URL from config map: " + urlFromEnv);
 			System.setProperty(mpUrlPropName, urlFromEnv);
