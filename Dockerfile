@@ -1,4 +1,4 @@
-#       Copyright 2017-2019 IBM Corp All Rights Reserved
+#       Copyright 2017-2020 IBM Corp All Rights Reserved
 
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 # FROM websphere-liberty:microProfile3
-FROM openliberty/open-liberty:microProfile3-ubi-min
+FROM openliberty/open-liberty:kernel-java8-openj9-ubi
 
 COPY --chown=1001:0 src/main/liberty/config /config/
 COPY --chown=1001:0 target/stock-quote-1.0-SNAPSHOT.war /config/apps/StockQuote.war
