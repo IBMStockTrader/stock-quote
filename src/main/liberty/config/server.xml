@@ -33,12 +33,7 @@
 
     <ssl id="RpSSLConfig" keyStoreRef="defaultKeyStore" />
 
-    <!--<include optional="false" location="includes/${env.AUTH_TYPE}.xml"/>-->
-    <mpJwt id="myMpJwt"
-      audiences="trader"
-      issuer="${env.OIDC_ISSUER}"
-      jwksUri="${env.OIDC_JWKS_URL}"
-      ignoreApplicationAuthMethod="true"/>
+    <include optional="false" location="includes/${env.AUTH_TYPE}.xml"/>
 
 
     <mpMetrics authentication="false"/>
