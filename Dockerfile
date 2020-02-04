@@ -26,7 +26,7 @@ FROM openliberty/open-liberty:microProfile3-ubi-min
 ARG extract_keycloak_cert
 USER root
 COPY src/main/liberty/config /opt/ol/wlp/usr/servers/defaultServer/
-COPY --from=build /usr/target/portfolio-1.0-SNAPSHOT.war /opt/ol/wlp/usr/servers/defaultServer/apps/Portfolio.war
+COPY --from=build /usr/target/stock-quote-1.0-SNAPSHOT.war /opt/ol/wlp/usr/servers/defaultServer/apps/StockQuote.war
 COPY --from=cert-extractor /keycloak.pem /usr/keycloak.pem
 RUN if [ "$extract_keycloak_cert" = "true" ]; then RUN keytool -import -v -trustcacerts -alias keycloak -file /usr/keycloak.pem -keystore /opt/ol/wlp/usr/servers/defaultServer/resources/security/key.jks --noprompt --storepass passw0rd ; fi
 RUN chown -R 1001:0 config/
