@@ -15,7 +15,7 @@
 FROM alpine:latest AS cert-extractor
 ARG keycloak_connection_string
 ARG extract_keycloak_cert
-RUN touch keycloak.pem
+RUN echo "Extract cert: $extract_keycloak_cert - Connection string: $keycloak_connection_string" && touch keycloak.pem
 RUN if [ "$extract_keycloak_cert" = "true" ]; then apk add openssl && openssl s_client -showcerts -connect ${keycloak_connection_string} </dev/null 2>/dev/null|openssl x509 -outform PEM > keycloak.pem ; fi
 
 FROM maven:3.6-jdk-11-slim AS build
