@@ -14,7 +14,7 @@
 <server>
   <mpJwt id="myMpJwt"
     audiences="trader"
-    issuer="https://keycloak-maxtest.ceh-smaug-a01ee4194ed985a1e32b1d96fd4ae346-0000.us-south.containers.appdomain.cloud/auth/realms/master"
-    jwksUri="https://keycloak-maxtest.ceh-smaug-a01ee4194ed985a1e32b1d96fd4ae346-0000.us-south.containers.appdomain.cloud/auth/realms/master/protocol/openid-connect/certs"
+    issuer="${env.OIDC_ISSUER}"
+    jwksUri="${env.OIDC_JWKS_URL}"
     ignoreApplicationAuthMethod="true"/>
 </server>
