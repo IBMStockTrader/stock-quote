@@ -10,9 +10,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
-
-<mpJwt id="myMpJwt"
-  audiences="${env.JWT_AUDIENCE}"
-  issuer="${env.JWT_ISSUER}"
-  keyName="default"
-  ignoreApplicationAuthMethod="false"/>
+<server>
+  <mpJwt id="myMpJwt"
+    audiences="${env.JWT_AUDIENCE}"
+    issuer="${env.JWT_ISSUER}"
+    keyName="default"
+    ignoreApplicationAuthMethod="false"/>
+</server>
