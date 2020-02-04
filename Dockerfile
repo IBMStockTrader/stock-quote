@@ -29,7 +29,7 @@ COPY src/main/liberty/config /opt/ol/wlp/usr/servers/defaultServer/
 COPY --from=build /usr/target/stock-quote-1.0-SNAPSHOT.war /opt/ol/wlp/usr/servers/defaultServer/apps/StockQuote.war
 COPY --from=cert-extractor /keycloak.pem /usr/keycloak.pem
 RUN if [ "$extract_keycloak_cert" = "true" ]; then keytool -import -v -trustcacerts -alias keycloak -file /usr/keycloak.pem -keystore /opt/ol/wlp/usr/servers/defaultServer/resources/security/key.jks --noprompt --storepass passw0rd ; fi
-RUN ls /opt/ol/wlp/usr/servers/defaultServer/resources/security/
+RUN ls -la /opt/ol/wlp/usr/servers/defaultServer/resources/security/
 RUN chown -R 1001:0 config/
 USER 1001
 RUN configure.sh
