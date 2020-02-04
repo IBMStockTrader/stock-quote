@@ -17,7 +17,6 @@ ARG keycloak_connection_string
 ARG extract_keycloak_cert
 RUN echo "Extract cert: '$extract_keycloak_cert' - Connection string: '$keycloak_connection_string'" && touch keycloak.pem
 RUN if [ "$extract_keycloak_cert" = "true" ]; then apk add openssl && openssl s_client -showcerts -connect ${keycloak_connection_string} </dev/null 2>/dev/null|openssl x509 -outform PEM > keycloak.pem ; fi
-RUN if [ "$extract_keycloak_cert" = "test" ]; then apk add openssl && openssl s_client -showcerts -connect ${keycloak_connection_string} </dev/null 2>/dev/null|openssl x509 -outform PEM > keycloak.pem ; fi
 
 FROM maven:3.6-jdk-11-slim AS build
 COPY . /usr/
@@ -31,5 +30,5 @@ COPY --from=build /usr/target/stock-quote-1.0-SNAPSHOT.war /opt/ol/wlp/usr/serve
 COPY --from=cert-extractor /keycloak.pem /tmp/keycloak.pem
 RUN chown -R 1001:0 config/
 USER 1001
-RUN if [ "$extract_keycloak_cert" = "test" ]; then keytool -import -v -trustcacerts -alias keycloak -file /tmp/keycloak.pem -keystore /opt/ol/wlp/usr/servers/defaultServer/resources/security/key.jks --noprompt --storepass passw0rd ; fi
+RUN if [ "$extract_keycloak_cert" = "true" ]; then keytool -import -v -trustcacerts -alias keycloak -file /tmp/keycloak.pem -keystore /opt/ol/wlp/usr/servers/defaultServer/resources/security/key.jks --noprompt --storepass passw0rd ; fi
 RUN configure.sh
