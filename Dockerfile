@@ -1,4 +1,4 @@
-#       Copyright 2017-2020 IBM Corp All Rights Reserved
+#       Copyright 2017-2019 IBM Corp All Rights Reserved
 
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -12,10 +12,23 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-# FROM websphere-liberty:microProfile3
-FROM openliberty/open-liberty:kernel-java8-openj9-ubi
+FROM alpine:latest AS cert-extractor
+ARG keycloak_connection_string
+ARG extract_keycloak_cert
+RUN touch keycloak.pem
+RUN if [ "$extract_keycloak_cert" = "true" ]; then apk add openssl && openssl s_client -showcerts -connect ${keycloak_connection_string} </dev/null 2>/dev/null|openssl x509 -outform PEM > keycloak.pem ; fi
 
-COPY --chown=1001:0 src/main/liberty/config /config/
-COPY --chown=1001:0 target/stock-quote-1.0-SNAPSHOT.war /config/apps/StockQuote.war
+FROM maven:3.6-jdk-11-slim AS build
+COPY . /usr/
+RUN mvn -f /usr/pom.xml clean package
 
+FROM openliberty/open-liberty:microProfile3-ubi-min
+ARG extract_keycloak_cert
+USER root
+COPY src/main/liberty/config /opt/ol/wlp/usr/servers/defaultServer/
+COPY --from=build /usr/target/portfolio-1.0-SNAPSHOT.war /opt/ol/wlp/usr/servers/defaultServer/apps/Portfolio.war
+COPY --from=cert-extractor /keycloak.pem /usr/keycloak.pem
+RUN if [ "$extract_keycloak_cert" = "true" ]; then RUN keytool -import -v -trustcacerts -alias keycloak -file /usr/keycloak.pem -keystore /opt/ol/wlp/usr/servers/defaultServer/resources/security/key.jks --noprompt --storepass passw0rd ; fi
+RUN chown -R 1001:0 config/
+USER 1001
 RUN configure.sh
