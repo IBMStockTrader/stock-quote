@@ -31,7 +31,13 @@
 
     <ssl id="RpSSLConfig" keyStoreRef="defaultKeyStore" />
 
-    <mpJwt id="myMpJwt" audiences="${env.JWT_AUDIENCE}" issuer="${env.JWT_ISSUER}" keyName="default" ignoreApplicationAuthMethod="false"/>
+<!--    <mpJwt id="myMpJwt" audiences="${env.JWT_AUDIENCE}" issuer="${env.JWT_ISSUER}" keyName="default" ignoreApplicationAuthMethod="false"/>
+-->
+    <mpJwt id="myMpJwt"
+      audiences="trader"
+      issuer="${env.OIDC_ISSUER}"
+      jwksUri="${env.OIDC_JWKS_URL}"
+      ignoreApplicationAuthMethod="true"/>
 
     <mpMetrics authentication="false"/>
 
