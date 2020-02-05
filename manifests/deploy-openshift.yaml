@@ -32,7 +32,7 @@ spec:
           - "stock-quote"
         from:
           kind: "ImageStreamTag"
-          name: "stocktrader-quote:latest"
+          name: "stock-quote:latest"
   template:
     metadata:
       labels:
@@ -48,7 +48,7 @@ spec:
 #       image: registry.ng.bluemix.net/stock_trader/stock-quote:latest # IBM Kubernetes Service
 #       Note: this manifests/deploy.yaml will be used when we want to deploy this directly using kubectl or a helm chart.
 #             Microclimate uses the Charts folder so we can actually have both options
-        image: image-registry.openshift-image-registry.svc:5000/stock-trader/stocktrader-quote:latest
+        image: image-registry.openshift-image-registry.svc:5000/stock-trader/stock-quote:latest
         env:
           - name: REDIS_URL
             valueFrom:
