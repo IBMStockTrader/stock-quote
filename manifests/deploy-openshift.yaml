@@ -1,0 +1,178 @@
+#       Copyright 2017-2019 IBM Corp All Rights Reserved
+
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+
+#       http://www.apache.org/licenses/LICENSE-2.0
+
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+#Deploy the pod
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: stock-quote
+  labels:
+    app: stock-trader
+  annotations:
+    prism.subkind: Liberty
+spec:
+  replicas: 1
+  triggers:
+    - type: "ConfigChange"
+    - type: "ImageChange"
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - "stock-quote"
+        from:
+          kind: "ImageStreamTag"
+          name: "stock-quote:latest"
+  template:
+    metadata:
+      labels:
+        app: stock-quote
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: "9080"
+    spec:
+      containers:
+      - name: stock-quote
+#       image: stock-quote:latest # Microservice Builder
+#       image: mycluster.icp:8500/stock-trader/stock-quote:latest # IBM Cloud Private
+#       image: registry.ng.bluemix.net/stock_trader/stock-quote:latest # IBM Kubernetes Service
+#       Note: this manifests/deploy.yaml will be used when we want to deploy this directly using kubectl or a helm chart.
+#             Microclimate uses the Charts folder so we can actually have both options
+        image: image-registry.openshift-image-registry.svc:5000/stock-trader/stock-quote:latest
+        env:
+          - name: REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: redis
+                key: url
+          - name: CACHE_INTERVAL
+            valueFrom:
+              secretKeyRef:
+                name: redis
+                key: cache-interval
+                optional: true
+          - name: STOCKQUOTE_URL
+            valueFrom:
+              secretKeyRef:
+                name: urls
+                key: stockquote
+                optional: true
+          - name: API_CONNECT_URL
+            valueFrom:
+              configMapKeyRef:
+                name: urls
+                key: api-connect
+                optional: true
+          - name: IEX_URL
+            valueFrom:
+              configMapKeyRef:
+                name: urls
+                key: iex
+                optional: true
+          - name: IEX_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: redis
+                key: iex-api-key
+                optional: true
+          - name: WLP_LOGGING_CONSOLE_FORMAT
+            value: json
+          - name: WLP_LOGGING_CONSOLE_SOURCE
+            value: message,ffdc
+          - name: OIDC_ISSUER
+            valueFrom:
+              secretKeyRef:
+                name: keycloak-oidc
+                key: OIDC_ISSUER
+                optional: true
+          - name: OIDC_JWKS_URL
+            valueFrom:
+              secretKeyRef:
+                name: keycloak-oidc
+                key: OIDC_JWKS_URL
+                optional: true
+          - name: JWT_AUDIENCE
+            value: trader
+          - name: JWT_ISSUER
+            valueFrom:
+              secretKeyRef:
+                name: keycloak-oidc
+                key: OIDC_ISSUER
+                optional: true
+          - name: AUTH_TYPE
+            value: keycloak
+        ports:
+          - containerPort: 9080
+          - containerPort: 9443
+        imagePullPolicy: Always
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 9080
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 9080
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          successThreshold: 1
+          failureThreshold: 5 # Allow a little time to exec into the pod to grab FFDCs before it's killed
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+---
+#Deploy the service
+apiVersion: v1
+kind: Service
+metadata:
+  name: stock-quote-service
+# namespace: stock-trader
+  labels:
+    app: stock-quote
+    solution: stock-trader
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 9080
+      targetPort: 9080
+    - name: https
+      protocol: TCP
+      port: 9443
+      targetPort: 9443
+  selector:
+    app: stock-quote
+---
+#Deploy the autoscaler
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: stock-quote-hpa
+  labels:
+    solution: stock-trader
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: stock-quote
+  maxReplicas: 10
+  minReplicas: 2
+  targetCPUUtilizationPercentage: 60

@@ -20,6 +20,8 @@
 <!--    <feature>logstashCollector-1.0</feature> -->
     </featureManager>
 
+    <variable name="env.AUTH_TYPE" defaultValue="nativejwt"/>
+
     <logging traceSpecification="*=info" consoleLogLevel="INFO" />
 
     <httpEndpoint httpPort="9080" httpsPort="9443" host="*" id="defaultHttpEndpoint"/>
@@ -31,7 +33,8 @@
 
     <ssl id="RpSSLConfig" keyStoreRef="defaultKeyStore" />
 
-    <mpJwt id="myMpJwt" audiences="${env.JWT_AUDIENCE}" issuer="${env.JWT_ISSUER}" keyName="default" ignoreApplicationAuthMethod="false"/>
+    <include optional="false" location="includes/${env.AUTH_TYPE}.xml"/>
+
 
     <mpMetrics authentication="false"/>
 
