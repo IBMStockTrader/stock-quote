@@ -20,7 +20,7 @@
 <!--    <feature>logstashCollector-1.0</feature> -->
     </featureManager>
 
-    <variable name="env.AUTH_TYPE" defaultValue="nativejwt"/>
+    <variable name="AUTH_TYPE" defaultValue="basic"/>
 
     <logging traceSpecification="*=info" consoleLogLevel="INFO" />
 
