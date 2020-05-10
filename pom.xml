@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-       Copyright 2017-2019 IBM Corp All Rights Reserved
+       Copyright 2017-2020 IBM Corp All Rights Reserved
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -25,9 +25,9 @@
 
     <!-- Parent needed for MC to build properly -->
     <parent>
-        <groupId>net.wasdev.wlp.maven.parent</groupId>
+        <groupId>io.openliberty.tools</groupId>
         <artifactId>liberty-maven-app-parent</artifactId>
-        <version>2.1</version>
+        <version>3.2.1</version>
     </parent>
 
     <properties>
@@ -47,14 +47,14 @@
         <dependency>
             <groupId>org.eclipse.microprofile</groupId>
             <artifactId>microprofile</artifactId>
-            <version>3.0</version>
+            <version>3.3</version>
             <type>pom</type>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>3.1.0</version>
+            <version>3.3.0</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
