@@ -11,9 +11,8 @@
    limitations under the License.
 -->
 <server>
-  <mpJwt id="myMpJwt"
-    audiences="${env.JWT_AUDIENCE}"
-    issuer="${env.JWT_ISSUER}"
-    keyName="default"
-    ignoreApplicationAuthMethod="false"/>
+    <variable name="JWT_AUDIENCE" defaultValue="stock-trader"/>
+    <variable name="JWT_ISSUER" defaultValue="http://stock-trader.ibm.com"/>
+
+    <mpJwt id="stockTraderJWT" audiences="${JWT_AUDIENCE}" issuer="${JWT_ISSUER}" keyName="jwtSigner" ignoreApplicationAuthMethod="false" expiry="12h" sslRef="defaultSSLConfig"/>
 </server>
