@@ -1,5 +1,5 @@
 /*
-       Copyright 2017-2019 IBM Corp All Rights Reserved
+       Copyright 2017-2021 IBM Corp All Rights Reserved
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -251,6 +251,7 @@ public class StockQuote extends Application {
 					try {
 						quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol); //so go get a less stale value
 						logger.info("Got quote for "+symbol+" from API Connect");
+						quote.setTime(System.currentTimeMillis()); //so we don't report stale after the market has closed or on weekends
 						jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
 						logger.info("Refreshed "+symbol+" in Redis");
 					} catch (Throwable t) {
@@ -309,7 +310,7 @@ public class StockQuote extends Application {
 		logger.info("Quote for "+symbol+" is "+difference/((double)MINUTE_IN_MILLISECONDS)+" minutes old");
 
 		return (difference > cache_interval*MINUTE_IN_MILLISECONDS); //cached quote is too old
-    }
+	}
 
 	private Quote getTestQuote(String symbol, double price) { //in case API Connect or IEX is down or we're rate limited
 		Date now = new Date();
