@@ -27,6 +27,7 @@ import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -80,6 +81,7 @@ public class StockQuote extends Application {
 	private long cache_interval = 60; //default to 60 minutes
 	private SimpleDateFormat formatter = null;
 	private static String iexApiKey = null;
+	private static HashMap<String, Quote> backupCache = null; //in case Redis is unavailable, don't use up all our monthly calls to IEX
 
 	private @Inject @RestClient APIConnectClient apiConnectClient;
 	private @Inject @RestClient IEXClient iexClient;
@@ -162,6 +164,8 @@ public class StockQuote extends Application {
 				logger.info("Initializing Redis pool using URL: "+redis_url);
 				jedisPool = new JedisPool(jedisURI);
 			}
+
+			if (backupCache == null) backupCache = new HashMap<String, Quote>();
 
 			try {
 				String cache_string = System.getenv("CACHE_INTERVAL");
@@ -278,9 +282,11 @@ public class StockQuote extends Application {
 			}
 		} else {
 			//Redis not configured.  Fall back to the old-fashioned direct approach
-			try {
+			quote = backupCache.get(symbol);
+			if (quote == null) try { //don't bother with cache staleness if Redis isn't configured (bounce pod to get fresh)
 				logger.warning("Redis URL not configured, so driving call directly to API Connect");
 				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol);
+				backupCache.put(symbol, quote);
 				logger.info("Got quote for "+symbol+" from API Connect");
 			} catch (Throwable t3) {
 				logException(t3);
