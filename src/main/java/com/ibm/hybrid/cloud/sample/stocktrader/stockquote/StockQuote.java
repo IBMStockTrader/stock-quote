@@ -161,14 +161,17 @@ public class StockQuote extends Application {
 			    imagePullPolicy: Always
 			*/
 
-			if (jedisPool == null) { //the pool is static; the connections within the pool are obtained as needed
+			if (jedisPool == null) try { //the pool is static; the connections within the pool are obtained as needed
 				String redis_url = System.getenv("REDIS_URL");
 				URI jedisURI = new URI(redis_url);
 				logger.info("Initializing Redis pool using URL: "+redis_url);
 				jedisPool = new JedisPool(jedisURI);
+			} catch (Throwable t) {
+				logException(t);
 			}
 
 			if (backupCache == null) backupCache = new HashMap<String, Quote>();
+			formatter = new SimpleDateFormat("yyyy-MM-dd");
 
 			try {
 				String cache_string = System.getenv("CACHE_INTERVAL");
@@ -178,7 +181,6 @@ public class StockQuote extends Application {
 			} catch (Throwable t) {
 				logger.warning("No cache interval set - defaulting to 60 minutes");
 			}
-			formatter = new SimpleDateFormat("yyyy-MM-dd");
 			logger.info("Initialization complete!");
 		} catch (Throwable t) {
 			logException(t);
