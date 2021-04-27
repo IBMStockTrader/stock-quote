@@ -306,9 +306,8 @@ public class StockQuote extends Application {
 			} else try { //don't bother with cache staleness if Redis isn't configured (bounce pod to get fresh)
 				logger.info(symbol+" not found in backup cache, so driving call directly to API Connect");
 				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol);
+				logger.info("Got quote for "+symbol+" from API Connect - adding to the backup cache");
 				backupCache.put(symbol, quote);
-				logger.info(
-				logger.info("Got quote for "+symbol+" from API Connect");
 			} catch (Throwable t3) {
 				logException(t3);
 				return getTestQuote(symbol, ERROR);
