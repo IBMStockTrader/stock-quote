@@ -41,6 +41,7 @@ import javax.json.bind.JsonbBuilder;
 
 //JAX-RS 2.0 (JSR 339)
 import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
@@ -184,7 +185,7 @@ public class StockQuote extends Application {
 
 	@GET
 	@Path("/")
-	@Produces("application/json")
+	@Produces(MediaType.APPLICATION_JSON)
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
 	/**  Get all stock quotes in Redis.  This is a read-only operation that just returns what's already there, without any refreshing */
 	public Quote[] getAllCachedQuotes() {
@@ -212,9 +213,19 @@ public class StockQuote extends Application {
 		return quotes.toArray(quoteArray);
 	}
 
+	@POST
+	@Path("/{symbol}")
+	@Produces(MediaType.APPLICATION_JSON)
+//	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
+	/**  Set stock quote into cache.  Call this if IEX is failing, to load the backup cache with some stock prices */
+	public void updateCache(@PathParam("symbol") String symbol, @QueryParam("price") double price) throws IOException {
+		Quote quote = getTestQuote(symbol, price);
+		backupCache.put(symbol, quote);
+	}
+
 	@GET
 	@Path("/{symbol}")
-	@Produces("application/json")
+	@Produces(MediaType.APPLICATION_JSON)
 	@Fallback(fallbackMethod = "getStockQuoteViaIEX")
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
 	/**  Get stock quote from API Connect */
@@ -257,6 +268,7 @@ public class StockQuote extends Application {
 						logger.info("Got quote for "+symbol+" from API Connect");
 						quote.setTime(System.currentTimeMillis()); //so we don't report stale after the market has closed or on weekends
 						jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
+						backupCache.put(symbol, quote);
 						logger.info("Refreshed "+symbol+" in Redis");
 					} catch (Throwable t) {
 						logger.info("Error getting fresh quote; using cached value instead");
@@ -273,20 +285,29 @@ public class StockQuote extends Application {
 			logException(t);
 			
 			//something went wrong using Redis.  Fall back to the old-fashioned direct approach
+			logger.warning("Something went wrong getting the quote.  Falling back to non-Redis approach, with the backup cache");
 			try {
-				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol);
-				logger.info("Got quote for "+symbol+" from API Connect");
+				quote = backupCache.get(symbol);
+				if (quote == null) {
+					quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol);
+					logger.info("Got quote for "+symbol+" from API Connect - adding to the backup cache");
+					backupCache.put(symbol, quote);
+				}
 			} catch (Throwable t2) {
 				logException(t2);
 				return getTestQuote(symbol, ERROR);
 			}
 		} else {
 			//Redis not configured.  Fall back to the old-fashioned direct approach
+			logger.warning("Redis not available, so resorting to using a per-pod static HashMap for caching.  Bounce pod to refresh the static backup cache");
 			quote = backupCache.get(symbol);
-			if (quote == null) try { //don't bother with cache staleness if Redis isn't configured (bounce pod to get fresh)
-				logger.warning("Redis URL not configured, so driving call directly to API Connect");
+			if (quote != null) {
+				logger.info(symbol+" found in backup cache");
+			} else try { //don't bother with cache staleness if Redis isn't configured (bounce pod to get fresh)
+				logger.info(symbol+" not found in backup cache, so driving call directly to API Connect");
 				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol);
 				backupCache.put(symbol, quote);
+				logger.info(
 				logger.info("Got quote for "+symbol+" from API Connect");
 			} catch (Throwable t3) {
 				logException(t3);
