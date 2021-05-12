@@ -18,18 +18,19 @@ package com.ibm.hybrid.cloud.sample.stocktrader.stockquote.client;
 
 import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.json.Quote;
 
-import javax.enterprise.context.Dependent;
+import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
+
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @ApplicationPath("/")
 @Path("/")
-@Dependent
+@ApplicationScoped
 @RegisterRestClient
 /** mpRestClient "remote" interface for the IEX stock quote service */
 public interface IEXClient {
