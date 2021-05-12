@@ -21,8 +21,9 @@
     </featureManager>
 
     <variable name="AUTH_TYPE" defaultValue="basic"/>
+    <variable name="TRACE_SPEC" defaultValue="*=info"/>
 
-    <logging traceSpecification="*=info" consoleLogLevel="INFO" />
+    <logging traceSpecification="${TRACE_SPEC}" consoleLogLevel="INFO" />
 
     <httpEndpoint httpPort="9080" httpsPort="9443" host="*" id="defaultHttpEndpoint"/>
 
