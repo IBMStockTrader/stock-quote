@@ -52,7 +52,7 @@ import javax.ws.rs.QueryParam;
 
 //CDI 1.2
 import javax.inject.Inject;
-import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.RequestScoped;
 
 //mpRestClient 1.0
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -67,7 +67,7 @@ import redis.clients.jedis.JedisPool;
 
 @ApplicationPath("/")
 @Path("/")
-@ApplicationScoped
+@RequestScoped
 /** This version of StockQuote talks to API Connect (which talks to api.iextrading.com) */
 public class StockQuote extends Application {
 	private static Logger logger = Logger.getLogger(StockQuote.class.getName());
@@ -81,8 +81,9 @@ public class StockQuote extends Application {
 	private static final String TEST_SYMBOL = "TEST";
 	private static final double TEST_PRICE  = 123.45;
 
-	private long cache_interval = 60; //default to 60 minutes
-	private SimpleDateFormat formatter = null;
+	private static long cache_interval = 60; //default to 60 minutes
+	private static boolean initializationFailed = false;
+	private static SimpleDateFormat formatter = null;
 	private static String iexApiKey = null;
 	private static HashMap<String, Quote> backupCache = null; //in case Redis is unavailable, don't use up all our monthly calls to IEX
 
@@ -161,27 +162,32 @@ public class StockQuote extends Application {
 			    imagePullPolicy: Always
 			*/
 
-			if (jedisPool == null) try { //the pool is static; the connections within the pool are obtained as needed
+			if ((jedisPool == null) && !initializationFailed) try { //the pool is static; the connections within the pool are obtained as needed
 				String redis_url = System.getenv("REDIS_URL");
 				URI jedisURI = new URI(redis_url);
 				logger.info("Initializing Redis pool using URL: "+redis_url);
 				jedisPool = new JedisPool(jedisURI);
+				if (jedisPool != null) logger.info("Redis pool initialized successfully!");
 			} catch (Throwable t) {
+				initializationFailed = true; //so we don't retry the above thousands of times and log big stack traces each time
 				logException(t);
 			}
 
-			if (backupCache == null) backupCache = new HashMap<String, Quote>();
-			formatter = new SimpleDateFormat("yyyy-MM-dd");
+			//this is in a separate if block because the above Jedis stuff will throw an exception if not properly configured
+			if (backupCache == null) {
+				backupCache = new HashMap<String, Quote>();
+				formatter = new SimpleDateFormat("yyyy-MM-dd");
 
-			try {
-				String cache_string = System.getenv("CACHE_INTERVAL");
-				if (cache_string != null) {
-					cache_interval = Long.parseLong(cache_string);
+				try {
+					String cache_string = System.getenv("CACHE_INTERVAL");
+					if (cache_string != null) {
+						cache_interval = Long.parseLong(cache_string);
+					}
+				} catch (Throwable t) {
+					logger.warning("No cache interval set - defaulting to 60 minutes");
 				}
-			} catch (Throwable t) {
-				logger.warning("No cache interval set - defaulting to 60 minutes");
+				logger.info("Initialization complete!");
 			}
-			logger.info("Initialization complete!");
 		} catch (Throwable t) {
 			logException(t);
 		}
@@ -196,23 +202,27 @@ public class StockQuote extends Application {
 		Quote[] quoteArray = new Quote[] {};
 		ArrayList<Quote> quotes = new ArrayList<Quote>();
 
-		if (jedisPool != null) try {
-			Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
+		if (jedisPool != null) {
+			try {
+				Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
 
-			Set<String> keys = jedis.keys("*");
-			Iterator<String> iter = keys.iterator();
-			while (iter.hasNext()) {
-				String key = iter.next();
-				String cachedValue = jedis.get(key);
-				logger.info("Found this in Redis for "+key+": "+cachedValue);
+				Set<String> keys = jedis.keys("*");
+				Iterator<String> iter = keys.iterator();
+				while (iter.hasNext()) {
+					String key = iter.next();
+					String cachedValue = jedis.get(key);
+					logger.fine("Found this in Redis for "+key+": "+cachedValue);
 
-				Jsonb jsonb = JsonbBuilder.create();
-				Quote quote = jsonb.fromJson(cachedValue, Quote.class);
+					Jsonb jsonb = JsonbBuilder.create();
+					Quote quote = jsonb.fromJson(cachedValue, Quote.class);
 
-				quotes.add(quote);
+					quotes.add(quote);
+				}
+			} catch (Throwable t) {
+				logException(t);
 			}
-		} catch (Throwable t) {
-			logException(t);
+		} else {
+			logger.warning("jedisPool is null in getAllCachedQuotes()");
 		}
 		return quotes.toArray(quoteArray);
 	}
@@ -223,6 +233,7 @@ public class StockQuote extends Application {
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
 	/**  Set stock quote into cache.  Call this if IEX is failing, to load the backup cache with some stock prices */
 	public void updateCache(@PathParam("symbol") String symbol, @QueryParam("price") double price) throws IOException {
+		logger.fine("Updating backupCache for "+symbol);
 		Quote quote = getTestQuote(symbol, price);
 		backupCache.put(symbol, quote);
 	}
@@ -243,25 +254,30 @@ public class StockQuote extends Application {
 
 		Quote quote = null;
 		if (jedisPool != null) try {
+			String cachedValue = null;
 			Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
-			if (jedis==null) logger.warning("Unable to get connection to Redis from pool");
-
-			logger.info("Getting "+symbol+" from Redis");
-			String cachedValue = jedis.get(symbol); //Try to get it from Redis
-			if (cachedValue == null) { //It wasn't in Redis
-				logger.info(symbol+" wasn't in Redis so we will try to put it there");
-				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol); //so go get it like we did before we'd ever heard of Redis
-				logger.info("Got quote for "+symbol+" from API Connect");
-				jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
-				logger.info("Put "+symbol+" in Redis");
+			if (jedis==null) {
+				logger.warning("Unable to get connection to Redis from pool");
 			} else {
-				logger.info("Got this from Redis for "+symbol+": "+cachedValue);
+				logger.fine("Getting "+symbol+" from Redis");
+				cachedValue = jedis.get(symbol); //Try to get it from Redis
+			}
+			if (cachedValue == null) { //It wasn't in Redis
+				logger.fine(symbol+" wasn't in Redis so we will try to put it there");
+				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol); //so go get it like we did before we'd ever heard of Redis
+				logger.fine("Got quote for "+symbol+" from API Connect");
+				if (jedis != null) {
+					jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
+					logger.fine("Put "+symbol+" in Redis");
+				}
+			} else {
+				logger.fine("Got this from Redis for "+symbol+": "+cachedValue);
 
 				try {
 					Jsonb jsonb = JsonbBuilder.create();
 					quote = jsonb.fromJson(cachedValue, Quote.class);
 				} catch (Throwable t4) {
-					logger.info("Unable to parse JSON obtained from Redis.  Proceeding as if the quote was too stale.");
+					logger.info("Unable to parse JSON obtained from Redis for "+symbol+".  Proceeding as if the quote was too stale.");
 					logException(t4);
 				}
 
@@ -269,21 +285,21 @@ public class StockQuote extends Application {
 					logger.info(symbol+" in Redis was too stale");
 					try {
 						quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol); //so go get a less stale value
-						logger.info("Got quote for "+symbol+" from API Connect");
+						logger.fine("Got fresh quote for "+symbol+" from API Connect");
 						quote.setTime(System.currentTimeMillis()); //so we don't report stale after the market has closed or on weekends
 						jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
 						backupCache.put(symbol, quote);
-						logger.info("Refreshed "+symbol+" in Redis");
+						logger.fine("Refreshed "+symbol+" in Redis");
 					} catch (Throwable t) {
 						logger.info("Error getting fresh quote; using cached value instead");
 						logger.log(Level.WARNING, t.getClass().getName(), t);
 					}
 				} else {
-					logger.info("Used "+symbol+" from Redis");
+					logger.fine("Used "+symbol+" from Redis");
 				}
 			}
 
-			logger.info("Completed getting stock quote - releasing Redis resources");
+			logger.fine("Completed getting stock quote - releasing Redis resources");
 			jedis.close(); //Release resource
 		} catch (Throwable t) {
 			logException(t);
@@ -306,11 +322,11 @@ public class StockQuote extends Application {
 			logger.warning("Redis not available, so resorting to using a per-pod static HashMap for caching.  Bounce pod to refresh the static backup cache");
 			quote = backupCache.get(symbol);
 			if (quote != null) {
-				logger.info(symbol+" found in backup cache");
+				logger.fine(symbol+" found in backup cache");
 			} else try { //don't bother with cache staleness if Redis isn't configured (bounce pod to get fresh)
-				logger.info(symbol+" not found in backup cache, so driving call directly to API Connect");
+				logger.fine(symbol+" not found in backup cache, so driving call directly to API Connect");
 				quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol);
-				logger.info("Got quote for "+symbol+" from API Connect - adding to the backup cache");
+				logger.fine("Got quote for "+symbol+" from API Connect - adding to the backup cache");
 				backupCache.put(symbol, quote);
 			} catch (Throwable t3) {
 				logException(t3);
@@ -324,7 +340,19 @@ public class StockQuote extends Application {
 	/** When API Connect is unavailable, fall back to calling IEX directly to get the stock quote */
 	public Quote getStockQuoteViaIEX(String symbol) throws IOException {
 		logger.info("Using fallback method getStockQuoteViaIEX");
-		return iexClient.getStockQuoteViaIEX(symbol, iexApiKey);
+		Quote quote = backupCache.get(symbol);
+		if (quote != null) {
+			logger.fine(symbol+" found in backup cache");
+		} else try { //don't bother with cache staleness if API Connect isn't configured (bounce pod to get fresh)
+			logger.fine(symbol+" not found in backup cache, so driving call directly to IEX");
+			quote = iexClient.getStockQuoteViaIEX(symbol, iexApiKey);
+			logger.fine("Got quote for "+symbol+" from IEX - adding to the backup cache");
+			backupCache.put(symbol, quote);
+		} catch (Throwable t) {
+			logException(t);
+			return getTestQuote(symbol, ERROR);
+		}
+		return quote;
 	}
 
 	private boolean isStale(Quote quote) {
@@ -337,7 +365,7 @@ public class StockQuote extends Application {
 		long difference = now - then;
 
 		String symbol = quote.getSymbol();
-		logger.info("Quote for "+symbol+" is "+difference/((double)MINUTE_IN_MILLISECONDS)+" minutes old");
+		logger.fine("Quote for "+symbol+" is "+difference/((double)MINUTE_IN_MILLISECONDS)+" minutes old");
 
 		return (difference > cache_interval*MINUTE_IN_MILLISECONDS); //cached quote is too old
 	}
