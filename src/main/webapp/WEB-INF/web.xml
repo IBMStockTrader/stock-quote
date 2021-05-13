@@ -15,7 +15,7 @@
 		<role-name>StockTrader</role-name>
 	</security-role>
 	<security-constraint>
-		<display-name>Stock Quote Security</display-name>
+		<display-name>Stock Quote read-only security</display-name>
 		<web-resource-collection>
 			<web-resource-name>Stock Quotes</web-resource-name>
 			<description>Applies to all paths under the context root (this service specifies which stock to quote based on a path param)</description>
@@ -25,6 +25,22 @@
 		<auth-constraint>
 			<description>Roles allowed to access stock quotes</description>
 			<role-name>StockViewer</role-name>
+			<role-name>StockTrader</role-name>
+		</auth-constraint>
+	</security-constraint>
+	<security-constraint>
+		<display-name>Stock Quote read/write security</display-name>
+		<web-resource-collection>
+			<web-resource-name>Portfolio modification methods</web-resource-name>
+			<description>
+				Applies to all paths under the context root (this
+				service specifies the stock to quote as a path param)
+			</description>
+			<url-pattern>/*</url-pattern>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<description>Roles allowed to access read/write operations on stock quotes</description>
 			<role-name>StockTrader</role-name>
 		</auth-constraint>
 	</security-constraint>
