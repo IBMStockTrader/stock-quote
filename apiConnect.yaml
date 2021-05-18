@@ -1,0 +1,114 @@
+swagger: '2.0'
+info:
+  title: Stock quote API
+  description: API to get a stock quote from IEX Trading
+  version: 1.0.0
+  x-ibm-name: stock-quote-api
+  contact:
+    name: John Alcorn
+    email: jalcorn@us.ibm.com
+    url: 'https://github.com/IBMStockTrader'
+  license:
+    name: 'Apache License, version 2.0'
+    url: 'http://www.apache.org/licenses/LICENSE-2.0'
+  termsOfService: Sample provided "AS IS"
+host: $(catalog.host)
+schemes:
+  - https
+basePath: /stocks
+consumes:
+  - application/json
+produces:
+  - application/json
+x-ibm-configuration:
+  assembly:
+    execute:
+      - invoke:
+          target-url: 'https://cloud.iexapis.com/stable/stock/{symbol}/quote?token=pk_10a9086ec3cb46a4ba44858b84f1db8b'
+          title: Hit IEXtrading API
+          cache-response: time-to-live
+          cache-key: $(request.search)
+          description: Invoke the stock quote API on api.iextrading.com
+          verb: GET
+      - gatewayscript:
+          title: Mediate results
+          description: Take the output from api.iextrading.com and simplify it
+          source: |
+            // example output from api.iextrading.com, for stock "IBM":
+            // {"symbol":"IBM","companyName":"International Business Machines Corporation","primaryExchange":"New York Stock Exchange","sector":"Technology","calculationPrice":"close","open":158.8,"openTime":1523971800627,"close":160.91,"closeTime":1523995211101,"high":162,"low":158.51,"latestPrice":160.91,"latestSource":"Close","latestTime":"April 17, 2018","latestUpdate":1523995211101,"latestVolume":9550253,"iexRealtimePrice":151.76,"iexRealtimeSize":90,"iexLastUpdated":1523996314558,"delayedPrice":152.2,"delayedPriceTime":1523996289832,"previousClose":157.89,"change":3.02,"changePercent":0.01913,"iexMarketPercent":0.03948,"iexVolume":377044,"avgTotalVolume":4450618,"iexBidPrice":0,"iexBidSize":0,"iexAskPrice":0,"iexAskSize":0,"marketCap":148225125824,"peRatio":11.63,"week52High":171.69,"week52Low":139.13,"ytdChange":0.03367614623221132}
+            // the data we care about is in "latestPrice" and "latestUpdate"
+
+            apim.readInputAsJSON(function (error, quote) {
+                if (error) {
+                    console.log("Failed to read data in JSON format");
+                } else {
+                    var date = new Date(quote.latestUpdate);
+                    var myOutput = {
+                        "symbol": quote.symbol,
+                        "date": date.toISOString().slice(0,10),
+                        "time": quote.latestUpdate,
+                        "price": quote.latestPrice
+                    };
+                    session.output.write(myOutput);
+                    apim.output('application/json');
+                }
+            });
+  gateway: datapower-gateway
+  enforced: true
+  testable: true
+  phase: realized
+  cors:
+    enabled: true
+paths:
+  '/{symbol}':
+    get:
+      description: Get a quote for the specified stock
+      parameters:
+        - name: symbol
+          in: path
+          description: Stock ticker symbol (such as IBM or AAPL)
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/Quote'
+        '404':
+          description: Invalid stock symbol specified
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: An error occurred
+          schema:
+            $ref: '#/definitions/Error'
+      operationId: getStockQuote
+definitions:
+  Quote:
+    description: Stock quote
+    properties:
+      symbol:
+        type: string
+        description: The stock ticker symbol
+      date:
+        type: string
+        description: The date for which the price is quoted
+      time:
+        type: number
+        description: The time for which the price is quoted.  Number of milliseconds since 1970.
+      price:
+        type: number
+        description: The closing price for the specified stock on the specified date
+  Error:
+    description: Error getting stock quote
+    properties:
+      httpCode:
+        type: number
+        description: 'The http response code, such as a 404 for stock ticker symbol not found'
+      httpMessage:
+        type: string
+        description: Description about the http error code
+      moreInformation:
+        type: string
+        description: Additional information about the error that occurred
+
