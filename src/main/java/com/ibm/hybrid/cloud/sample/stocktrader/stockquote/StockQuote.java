@@ -176,8 +176,7 @@ public class StockQuote extends Application {
 				jedisPoolConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(30));
 				jedisPoolConfig.setNumTestsPerEvictionRun(-1); // test all connections
 
-				jedisPool = new JedisPool(jedisURI);
-
+				jedisPool = new JedisPool(jedisPoolConfig, jedisURI);
 				if (jedisPool != null) logger.info("Redis pool initialized successfully!");
 			} catch (Throwable t) {
 				initializationFailed = true; //so we don't retry the above thousands of times and log big stack traces each time
