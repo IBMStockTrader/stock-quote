@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -63,6 +64,7 @@ import org.eclipse.microprofile.faulttolerance.Fallback;
 //Jedis (Java for Redis)
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 
 @ApplicationPath("/")
@@ -166,6 +168,14 @@ public class StockQuote extends Application {
 				String redis_url = System.getenv("REDIS_URL");
 				URI jedisURI = new URI(redis_url);
 				logger.info("Initializing Redis pool using URL: "+redis_url);
+				// @rtclauss Add connection pool configuration to combat potentially stale connections
+				JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
+				jedisPoolConfig.setTestOnBorrow(true);
+				jedisPoolConfig.setTestWhileIdle(true);
+				jedisPoolConfig.setMinEvictableIdleTime(Duration.ofSeconds(60));
+				jedisPoolConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(30));
+				jedisPoolConfig.setNumTestsPerEvictionRun(-1); // test all connections
+
 				jedisPool = new JedisPool(jedisURI);
 				if (jedisPool != null) logger.info("Redis pool initialized successfully!");
 			} catch (Throwable t) {
