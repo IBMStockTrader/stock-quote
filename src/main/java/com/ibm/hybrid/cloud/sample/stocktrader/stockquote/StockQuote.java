@@ -111,7 +111,7 @@ public class StockQuote extends Application {
 		} else {
 			logger.info("IEX URL not found from env var from config map, so defaulting to value in jvm.options: " + System.getProperty(mpUrlPropName));
 		}
-	
+
 		iexApiKey = System.getenv("IEX_API_KEY");
 		if ((iexApiKey == null) || iexApiKey.isEmpty()) {
 			logger.warning("No API key provided for IEX.  If API Connect isn't available, fallback to direct calls to IEX will fail");
@@ -177,6 +177,7 @@ public class StockQuote extends Application {
 				jedisPoolConfig.setNumTestsPerEvictionRun(-1); // test all connections
 
 				jedisPool = new JedisPool(jedisURI);
+
 				if (jedisPool != null) logger.info("Redis pool initialized successfully!");
 			} catch (Throwable t) {
 				initializationFailed = true; //so we don't retry the above thousands of times and log big stack traces each time
@@ -213,8 +214,8 @@ public class StockQuote extends Application {
 		ArrayList<Quote> quotes = new ArrayList<Quote>();
 
 		if (jedisPool != null) {
-			try {
-				Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
+			// @rtclauss try-with-resources to release the jedis instance back to the pool when done
+			try (Jedis jedis = jedisPool.getResource();){ //Get a connection from the pool
 
 				Set<String> keys = jedis.keys("*");
 				Iterator<String> iter = keys.iterator();
@@ -263,9 +264,10 @@ public class StockQuote extends Application {
 		}
 
 		Quote quote = null;
-		if (jedisPool != null) try {
+		// @rtclauss try-with-resources to release the jedis instance back to the pool when done
+		if (jedisPool != null) try (Jedis jedis = jedisPool.getResource();){ //Get a connection from the pool
 			String cachedValue = null;
-			Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
+
 			if (jedis==null) {
 				logger.warning("Unable to get connection to Redis from pool");
 			} else {
@@ -313,7 +315,7 @@ public class StockQuote extends Application {
 			jedis.close(); //Release resource
 		} catch (Throwable t) {
 			logException(t);
-			
+
 			//something went wrong using Redis.  Fall back to the old-fashioned direct approach
 			logger.warning("Something went wrong getting the quote.  Falling back to non-Redis approach, with the backup cache");
 			try {
