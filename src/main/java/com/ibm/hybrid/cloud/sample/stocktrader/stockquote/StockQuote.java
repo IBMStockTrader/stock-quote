@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -63,6 +64,7 @@ import org.eclipse.microprofile.faulttolerance.Fallback;
 //Jedis (Java for Redis)
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 
 @ApplicationPath("/")
@@ -72,6 +74,7 @@ import redis.clients.jedis.JedisPool;
 public class StockQuote extends Application {
 	private static Logger logger = Logger.getLogger(StockQuote.class.getName());
 	private static JedisPool jedisPool = null;
+	private static JedisPoolConfig jedisPoolConfig = null;
 
 	private static final long MINUTE_IN_MILLISECONDS = 60000;
 	private static final double ERROR       = -1;
@@ -109,7 +112,7 @@ public class StockQuote extends Application {
 		} else {
 			logger.info("IEX URL not found from env var from config map, so defaulting to value in jvm.options: " + System.getProperty(mpUrlPropName));
 		}
-	
+
 		iexApiKey = System.getenv("IEX_API_KEY");
 		if ((iexApiKey == null) || iexApiKey.isEmpty()) {
 			logger.warning("No API key provided for IEX.  If API Connect isn't available, fallback to direct calls to IEX will fail");
@@ -166,7 +169,10 @@ public class StockQuote extends Application {
 				String redis_url = System.getenv("REDIS_URL");
 				URI jedisURI = new URI(redis_url);
 				logger.info("Initializing Redis pool using URL: "+redis_url);
-				jedisPool = new JedisPool(jedisURI);
+				// @rtclauss Add connection pool configuration to combat potentially stale connections
+				jedisPoolConfig = getPoolConfig();
+
+				jedisPool = new JedisPool(jedisPoolConfig, jedisURI);
 				if (jedisPool != null) logger.info("Redis pool initialized successfully!");
 			} catch (Throwable t) {
 				initializationFailed = true; //so we don't retry the above thousands of times and log big stack traces each time
@@ -203,8 +209,9 @@ public class StockQuote extends Application {
 		ArrayList<Quote> quotes = new ArrayList<Quote>();
 
 		if (jedisPool != null) {
-			try {
-				Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
+			// @rtclauss try-with-resources to release the jedis instance back to the pool when done
+			try (Jedis jedis = jedisPool.getResource();){ //Get a connection from the pool
+				logger.finest("getAllCachedQuotes " + getPoolCurrentUsage());
 
 				Set<String> keys = jedis.keys("*");
 				Iterator<String> iter = keys.iterator();
@@ -253,9 +260,11 @@ public class StockQuote extends Application {
 		}
 
 		Quote quote = null;
-		if (jedisPool != null) try {
+		// @rtclauss try-with-resources to release the jedis instance back to the pool when done
+		if (jedisPool != null) try (Jedis jedis = jedisPool.getResource();){ //Get a connection from the pool
+			logger.finest("getStockQuote " + getPoolCurrentUsage());
 			String cachedValue = null;
-			Jedis jedis = jedisPool.getResource(); //Get a connection from the pool
+
 			if (jedis==null) {
 				logger.warning("Unable to get connection to Redis from pool");
 			} else {
@@ -299,11 +308,10 @@ public class StockQuote extends Application {
 				}
 			}
 
-			logger.fine("Completed getting stock quote - releasing Redis resources");
-			jedis.close(); //Release resource
+			logger.fine("Completed getting stock quote - releasing Redis resources automatically");
 		} catch (Throwable t) {
 			logException(t);
-			
+
 			//something went wrong using Redis.  Fall back to the old-fashioned direct approach
 			logger.warning("Something went wrong getting the quote.  Falling back to non-Redis approach, with the backup cache");
 			try {
@@ -395,6 +403,70 @@ public class StockQuote extends Application {
 		logger.info("Done sleeping.");
 
 		return getTestQuote(SLOW_SYMBOL, TEST_PRICE);
+	}
+
+	public static JedisPoolConfig getPoolConfig() {
+		if (jedisPoolConfig == null) {
+			JedisPoolConfig poolConfig = new JedisPoolConfig();
+
+			// Each thread trying to access Redis needs its own Jedis instance from the pool.
+			// Using too small a value here can lead to performance problems, too big and you have wasted resources.
+			int maxConnections = 200;
+			poolConfig.setMaxTotal(maxConnections);
+			poolConfig.setMaxIdle(maxConnections);
+
+			// This controls the number of connections that should be maintained for bursts of load.
+			// Increase this value when you see pool.getResource() taking a long time to complete under burst scenarios
+			poolConfig.setMinIdle(50);
+
+			// Using "false" here will make it easier to debug when your maxTotal/minIdle/etc settings need adjusting.
+			// Setting it to "true" will result better behavior when unexpected load hits in production
+			poolConfig.setBlockWhenExhausted(true);
+
+			// How long to wait before throwing when pool is exhausted
+			poolConfig.setMaxWaitMillis(30000);
+
+			// Test the connection before it's about to be reused
+			poolConfig.setTestOnBorrow(true);
+
+			// Test the pool when we're idle
+			poolConfig.setTestWhileIdle(true);
+
+			// Set eviction timeout for idle connections
+			poolConfig.setMinEvictableIdleTime(Duration.ofSeconds(60));
+
+			//Amount of time to wait before evicting idle connections
+			poolConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(30));
+
+			// Check all the connections at once
+			poolConfig.setNumTestsPerEvictionRun(3); // test all connections
+
+			StockQuote.jedisPoolConfig = poolConfig;
+		}
+
+		return jedisPoolConfig;
+	}
+
+	public static String getPoolCurrentUsage()
+	{
+		JedisPool jedisPool = StockQuote.jedisPool;
+		JedisPoolConfig poolConfig = getPoolConfig();
+
+		int active = jedisPool.getNumActive();
+		int idle = jedisPool.getNumIdle();
+		int total = active + idle;
+		String log = String.format(
+				"JedisPool: Active=%d, Idle=%d, Waiters=%d, total=%d, maxTotal=%d, minIdle=%d, maxIdle=%d",
+				active,
+				idle,
+				jedisPool.getNumWaiters(),
+				total,
+				poolConfig.getMaxTotal(),
+				poolConfig.getMinIdle(),
+				poolConfig.getMaxIdle()
+		);
+
+		return log;
 	}
 
 	private static void logException(Throwable t) {
