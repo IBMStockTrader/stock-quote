@@ -1,5 +1,5 @@
 /*
-       Copyright 2017-2021 IBM Corp All Rights Reserved
+       Copyright 2017-2022 IBM Corp All Rights Reserved
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -261,8 +261,9 @@ public class StockQuote extends Application {
 
 		Quote quote = null;
 		// @rtclauss try-with-resources to release the jedis instance back to the pool when done
-		if (jedisPool != null) try (Jedis jedis = jedisPool.getResource();){ //Get a connection from the pool
-			logger.finest("getStockQuote " + getPoolCurrentUsage());
+		if (jedisPool != null) try (Jedis jedis = jedisPool.getResource();) { //Get a connection from the pool
+			//following getPoolCurrentUsage() call is kind of expensive, so only do it if the logging level is cranked to FINEST
+			if (logger.isLoggable(Level.FINEST)) logger.finest("getStockQuote " + getPoolCurrentUsage());
 			String cachedValue = null;
 
 			if (jedis==null) {
@@ -294,14 +295,18 @@ public class StockQuote extends Application {
 					logger.info(symbol+" in Redis was too stale");
 					try {
 						quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol); //so go get a less stale value
-						logger.fine("Got fresh quote for "+symbol+" from API Connect");
-						quote.setTime(System.currentTimeMillis()); //so we don't report stale after the market has closed or on weekends
-						jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
-						backupCache.put(symbol, quote);
-						logger.fine("Refreshed "+symbol+" in Redis");
-					} catch (Throwable t) {
+						if (quote != null) {
+							logger.fine("Got fresh quote for "+symbol+" from API Connect");
+							quote.setTime(System.currentTimeMillis()); //so we don't report stale after the market has closed or on weekends
+							jedis.set(symbol, quote.toString()); //Put in Redis so it's there next time we ask
+							backupCache.put(symbol, quote);
+							logger.fine("Refreshed "+symbol+" in Redis");
+						} else {
+							logger.warning("Got null from the stock quote provider");
+						}
+					} catch (Throwable t5) {
 						logger.info("Error getting fresh quote; using cached value instead");
-						logger.log(Level.WARNING, t.getClass().getName(), t);
+						logException(t5);
 					}
 				} else {
 					logger.fine("Used "+symbol+" from Redis");
@@ -312,22 +317,13 @@ public class StockQuote extends Application {
 		} catch (Throwable t) {
 			logException(t);
 
-			//something went wrong using Redis.  Fall back to the old-fashioned direct approach
-			logger.warning("Something went wrong getting the quote.  Falling back to non-Redis approach, with the backup cache");
-			try {
-				quote = backupCache.get(symbol);
-				if (quote == null) {
-					quote = apiConnectClient.getStockQuoteViaAPIConnect(symbol);
-					logger.info("Got quote for "+symbol+" from API Connect - adding to the backup cache");
-					backupCache.put(symbol, quote);
-				}
-			} catch (Throwable t2) {
-				logException(t2);
-				return getTestQuote(symbol, ERROR);
-			}
 		} else {
 			//Redis not configured.  Fall back to the old-fashioned direct approach
-			logger.warning("Redis not available, so resorting to using a per-pod static HashMap for caching.  Bounce pod to refresh the static backup cache");
+			logger.info("Redis not available, so resorting to using a per-pod static HashMap for caching.  Bounce pod to refresh the static backup cache");
+		}
+	
+		if (quote == null) { //give up on Redis and do it the old fashioned way
+			logger.warning("Something went wrong getting the quote.  Falling back to non-Redis approach, with the backup cache");
 			quote = backupCache.get(symbol);
 			if (quote != null) {
 				logger.fine(symbol+" found in backup cache");
