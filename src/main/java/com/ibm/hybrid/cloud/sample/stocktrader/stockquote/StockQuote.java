@@ -420,7 +420,7 @@ public class StockQuote extends Application {
 			poolConfig.setBlockWhenExhausted(true);
 
 			// How long to wait before throwing when pool is exhausted
-			poolConfig.setMaxWaitMillis(30000);
+			poolConfig.setMaxWait(Duration.ofSeconds(30));
 
 			// Test the connection before it's about to be reused
 			poolConfig.setTestOnBorrow(true);
