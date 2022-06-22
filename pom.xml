@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-       Copyright 2017-2021 IBM Corp All Rights Reserved
+       Copyright 2017-2022 IBM Corp All Rights Reserved
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -27,7 +27,7 @@
     <parent>
         <groupId>io.openliberty.tools</groupId>
         <artifactId>liberty-maven-app-parent</artifactId>
-        <version>3.4</version>
+        <version>3.6</version>
     </parent>
 
     <properties>
@@ -54,23 +54,23 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>4.0.1</version>
+            <version>4.2.3</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.jaegertracing</groupId>
             <artifactId>jaeger-client</artifactId>
-            <version>1.5.0</version>
+            <version>1.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
-            <version>1.7.32</version>
+            <version>1.7.36</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.1</version>
+            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -80,7 +80,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>2.6</version>
+                <version>3.3.2</version>
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                     <packagingExcludes>pom.xml</packagingExcludes>
@@ -103,9 +103,9 @@
                 <plugins>
                     <!-- Enablement of liberty-maven plugin in microclimate -->
                     <plugin>
-                        <groupId>net.wasdev.wlp.maven.plugins</groupId>
+                        <groupId>io.openliberty.tools</groupId>
                         <artifactId>liberty-maven-plugin</artifactId>
-                        <version>2.4.2</version>
+                        <version>3.6</version>
                         <extensions>true</extensions>
                         <configuration>
                             <looseApplication>true</looseApplication>
