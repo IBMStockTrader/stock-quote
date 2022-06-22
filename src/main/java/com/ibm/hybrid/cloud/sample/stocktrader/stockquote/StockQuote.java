@@ -70,7 +70,10 @@ import redis.clients.jedis.JedisPoolConfig;
 @ApplicationPath("/")
 @Path("/")
 @RequestScoped
-/** This version of StockQuote talks to API Connect (which talks to api.iextrading.com) */
+/** This version of StockQuote talks to API Connect (which talks to api.iextrading.com).
+  * Note that more recently, we've been using serverless functions (Lambda in AWS, or 
+  * Azure Cloud Functions), instead of IBM's API Connect, as the facade around IEX, though
+  * we've been maintaing the same OpenAPI contract as was required by API Connect. */
 public class StockQuote extends Application {
 	private static Logger logger = Logger.getLogger(StockQuote.class.getName());
 	private static JedisPool jedisPool = null;
