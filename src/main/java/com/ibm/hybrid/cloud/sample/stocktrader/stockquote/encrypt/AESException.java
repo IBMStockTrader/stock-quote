@@ -14,7 +14,7 @@
    limitations under the License.
  */
 
-package com.ibm.hybrid.cloud.sample.stocktrader.stockquote;
+package com.ibm.hybrid.cloud.sample.stocktrader.stockquote.encrypt;
 
 /** Written by Cristhian Aguilar (GitHub ID: sigfrido45) */
 public class AESException extends Exception {
