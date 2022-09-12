@@ -27,7 +27,7 @@
     <parent>
         <groupId>io.openliberty.tools</groupId>
         <artifactId>liberty-maven-app-parent</artifactId>
-        <version>3.6</version>
+        <version>3.6.1</version>
     </parent>
 
     <properties>
@@ -64,7 +64,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
-            <version>1.7.36</version>
+            <version>2.0.0</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -113,7 +113,7 @@
                     <plugin>
                         <groupId>io.openliberty.tools</groupId>
                         <artifactId>liberty-maven-plugin</artifactId>
-                        <version>3.6</version>
+                        <version>3.6.1</version>
                         <extensions>true</extensions>
                         <configuration>
                             <looseApplication>true</looseApplication>
