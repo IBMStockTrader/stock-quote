@@ -23,7 +23,7 @@
 # RUN mvn -f /usr/pom.xml clean package
 
 # FROM openliberty/open-liberty:kernel-slim-java11-openj9-ubi
-FROM openliberty/open-liberty:22.0.0.6-full-java17-openj9-ubi
+FROM openliberty/open-liberty:22.0.0.9-full-java17-openj9-ubi
 
 # ARG extract_keycloak_cert
 USER root
