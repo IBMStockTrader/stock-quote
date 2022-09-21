@@ -16,16 +16,20 @@
 
 package com.ibm.hybrid.cloud.sample.stocktrader.stockquote.encrypt;
 
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.*;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
+import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Base64;
 
-/** Written by Cristhian Aguilar (GitHub ID: sigfrido45) */
+/**
+ * Written by Cristhian Aguilar (GitHub ID: sigfrido45)
+ */
 public class AESGSMEncryption {
 
     private static final String GSM_ALGORITHM = "AES/GCM/NoPadding";
@@ -40,7 +44,7 @@ public class AESGSMEncryption {
     public String encrypt(String input) throws AESException {
         try {
             Cipher cipher = Cipher.getInstance(GSM_ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, getKey(), getInitialVector());
+            cipher.init(Cipher.ENCRYPT_MODE, getKey(), getGcmParamSpecification());
             byte[] cipherText = cipher.doFinal(input.getBytes());
             return new String(Base64.getEncoder().encode(cipherText));
         } catch (Exception e) {
@@ -51,12 +55,16 @@ public class AESGSMEncryption {
     public String decrypt(String cipherTextInBase64) throws AESException {
         try {
             Cipher cipher = Cipher.getInstance(GSM_ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, getKey(), getInitialVector());
+            cipher.init(Cipher.DECRYPT_MODE, getKey(), getGcmParamSpecification());
             byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(cipherTextInBase64.getBytes()));
             return new String(plainText);
         } catch (Exception e) {
             throw new AESException(e.getMessage());
         }
+    }
+
+    private AlgorithmParameterSpec getGcmParamSpecification() {
+        return new GCMParameterSpec(128, getInitialVector().getIV());
     }
 
     private Key getKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
