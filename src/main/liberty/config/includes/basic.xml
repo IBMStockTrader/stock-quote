@@ -1,5 +1,7 @@
 <!--
        Copyright 2017-2020 IBM Corp All Rights Reserved
+       Copyright 2022-2023 Kyndryl Corp, All Rights Reserved
+
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -11,8 +13,29 @@
    limitations under the License.
 -->
 <server>
-    <variable name="JWT_AUDIENCE" defaultValue="stock-trader"/>
-    <variable name="JWT_ISSUER" defaultValue="http://stock-trader.ibm.com"/>
+<!-- Authentication is via JWT SSO
+    <basicRegistry id="basic" realm="BasicRegistry">
+        <user name="admin" password="admin"/>
+        <user name="stock" password="trader"/>
+        <user name="debug" password="debug"/>
+        <user name="read"  password="only"/>
+        <user name="other" password="other"/>
+        <user name="jalcorn@us.ibm.com" password="test"/>
+        <group name="StockTrader">
+            <member name="stock"/>
+            <member name="debug"/>
+            <member name="jalcorn@us.ibm.com"/>
+        </group>
+        <group name="StockViewer">
+            <member name="read"/>
+        </group>
+    </basicRegistry>
 
+    <administrator-role>
+    	<user>admin</user>
+    </administrator-role>
+-->
+
+    <jwtBuilder id="defaultJWT" keyStoreRef="defaultTrustStore" keyAlias="jwtSigner" issuer="${JWT_ISSUER}" audiences="${JWT_AUDIENCE}" />
     <mpJwt id="stockTraderJWT" audiences="${JWT_AUDIENCE}" issuer="${JWT_ISSUER}" keyName="jwtSigner" ignoreApplicationAuthMethod="false" expiry="12h" sslRef="defaultSSLConfig"/>
 </server>
