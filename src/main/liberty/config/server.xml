@@ -1,5 +1,6 @@
 <!--
        Copyright 2017-2021 IBM Corp All Rights Reserved
+       Copyright 2022-2023 IBM Corp All Rights Reserved
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -15,13 +16,13 @@
     <featureManager>
         <feature>microProfile-4.1</feature>
         <feature>appSecurity-2.0</feature>
-        <feature>monitor-1.0</feature>
 <!--    <feature>ldapRegistry-3.0</feature>      -->
-<!--    <feature>logstashCollector-1.0</feature> -->
     </featureManager>
 
-    <variable name="AUTH_TYPE" defaultValue="basic"/>
-    <variable name="TRACE_SPEC" defaultValue="*=info"/>
+    <variable name="AUTH_TYPE"    defaultValue="basic"/>
+    <variable name="JWT_AUDIENCE" defaultValue="stock-trader"/>
+    <variable name="JWT_ISSUER"   defaultValue="http://stock-trader.ibm.com"/>
+    <variable name="TRACE_SPEC"   defaultValue="*=info"/>
 
     <logging traceSpecification="${TRACE_SPEC}" consoleLogLevel="INFO" />
 
@@ -38,27 +39,6 @@
     <include optional="false" location="${server.config.dir}/includes/${AUTH_TYPE}.xml"/>
 
     <mpMetrics authentication="false"/>
-
-<!--
-    <basicRegistry id="basic" realm="BasicRegistry">
-        <user name="admin" password="admin"/>
-        <user name="stock" password="trader"/>
-        <user name="debug" password="debug"/>
-        <user name="read"  password="only"/>
-        <user name="other" password="other"/>
-        <group name="StockTrader">
-            <member name="stock"/>
-            <member name="debug"/>
-        </group>
-        <group name="StockViewer">
-            <member name="read"/>
-        </group>
-    </basicRegistry>
-
-    <administrator-role>
-        <user>admin</user>
-    </administrator-role>
--->
 
     <!-- Define an LDAP configuration for BluePages.
     <ldapRegistry ldapType="IBM Tivoli Directory Server" host="bluepages.ibm.com" port="389" baseDN="o=ibm.com" realm="BluePages">
