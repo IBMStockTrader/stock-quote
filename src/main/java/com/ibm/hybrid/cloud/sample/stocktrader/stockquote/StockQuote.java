@@ -432,7 +432,7 @@ public class StockQuote extends Application {
 			poolConfig.setTestWhileIdle(true);
 
 			// Set eviction timeout for idle connections
-			poolConfig.setMinEvictableIdleTime(Duration.ofSeconds(60));
+			poolConfig.setMinEvictableIdleDuration(Duration.ofSeconds(60));
 
 			//Amount of time to wait before evicting idle connections
 			poolConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(30));
