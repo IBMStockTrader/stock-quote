@@ -16,8 +16,49 @@
 
 <!-- When global.auth=none in the CR yaml (meaning the AUTH_TYPE env var to this container is set to "none"), the server
      is NOT instructed to check for a JWT in the request header.  This can simplify setup and early dev/test (such as for
-     a new client UI), but is not intended to be used in a production deployment.  The only difference between "none" and
-     "basic" is whether the following mpJwt line is commented out or not.
+     a new client UI), but is not intended to be used in a production deployment.  The only differences between "none" and
+     "basic" are 1) whether the following mpJwt line is commented out or not, 2) whether the basicRegistry is defined, and
+     3) whether the overrideHttpAuthMethod="BASIC" param is passed to the webAppSecurity stanza.
+
     <mpJwt id="stockTraderJWT" audiences="${JWT_AUDIENCE}" issuer="${JWT_ISSUER}" keyName="jwtSigner" ignoreApplicationAuthMethod="false" expiry="12h" sslRef="defaultSSLConfig"/>
 -->
+
+<!-- Note that once I disabled @LoginConfig (set to MP-JWT) in my JAX-RS application, I started getting this:
+
+    java.lang.NullPointerException: Cannot invoke "com.ibm.ws.security.registry.UserRegistry.getRealm()" because "this.userRegistry" is null
+
+    So to fix that, I'm adding a dummy basicRegistry here (configured the same as in the Trader microservice when global.auth=basic)
+-->
+    <basicRegistry id="basic" realm="BasicRegistry">
+        <user name="admin" password="admin"/>
+        <user name="stock" password="trader"/>
+        <user name="debug" password="debug"/>
+        <user name="read"  password="only"/>
+        <user name="other" password="other"/>
+        <user name="john.alcorn@kyndryl.com" password="traderPwd"/>
+        <group name="StockTrader">
+            <member name="stock"/>
+            <member name="debug"/>
+            <member name="john.alcorn@kyndryl.com"/>
+        </group>
+        <group name="StockViewer">
+            <member name="read"/>
+        </group>
+    </basicRegistry>
+
+    <administrator-role>
+    	<user>admin</user>
+    </administrator-role>
+
+    <!-- Note the overrideHttpAuthMethod="BASIC" added below, just for the non-JWT scenario.  With that, you no longer need to construct
+         a JWT to pass in a request, but instead need to just pass basic auth credentials (like via the -u param to curl), as seen here
+         (where I had done a "docker run -p 9080:9080 -e TEST_MODE=true -e AUTH_TYPE=none broker:m1"):
+
+         jalcorn@Johns-MBP broker % curl -u stock:trader http://localhost:9080/broker
+         [{"balance":0.0,"cashAccountBalance":0.0,"commissions":0.0,"free":0,"loyalty":"Basic","nextCommission":0.0,"owner":"John","total":1234.56},{"balance":0.0,"cashAccountBalance":0.0,"commissions":0.0,"free":0,"loyalty":"Bronze","nextCommission":0.0,"owner":"Karri","total":12345.67},{"balance":0.0,"cashAccountBalance":0.0,"commissions":0.0,"free":0,"loyalty":"Bronze","nextCommission":0.0,"owner":"Ryan","total":23456.78},{"balance":0.0,"cashAccountBalance":0.0,"commissions":0.0,"free":0,"loyalty":"Silver","nextCommission":0.0,"owner":"Raunak","total":98765.43},{"balance":0.0,"cashAccountBalance":0.0,"commissions":0.0,"free":0,"loyalty":"Gold","nextCommission":0.0,"owner":"Greg","total":123456.78},{"balance":0.0,"cashAccountBalance":0.0,"commissions":0.0,"free":0,"loyalty":"Platinum","nextCommission":0.0,"owner":"Eric","total":1234567.89}]
+         jalcorn@Johns-MBP broker % 
+     -->
+    <webAppSecurity displayAuthenticationRealm="true" logoutOnHttpSessionExpire="true" preserveFullyQualifiedReferrerUrl="true"
+        trackLoggedOutSSOCookies="true" ssoCookieName="StockTraderSSO" useOnlyCustomCookieName="true" ssoUseDomainFromURL="true"
+        overrideHttpAuthMethod="BASIC" />
 </server>
