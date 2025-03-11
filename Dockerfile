@@ -1,5 +1,5 @@
 #       Copyright 2017-2021 IBM Corp All Rights Reserved
-#       Copyright 2022-2023 Kyndryl, All Rights Reserved
+#       Copyright 2022-2025 Kyndryl, All Rights Reserved
 
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
 # RUN mvn -f /usr/pom.xml clean package
 
 # FROM openliberty/open-liberty:kernel-slim-java11-openj9-ubi
-FROM openliberty/open-liberty:23.0.0.12-full-java17-openj9-ubi
+FROM openliberty/open-liberty:24.0.0.12-full-java17-openj9-ubi
 
 # ARG extract_keycloak_cert
 USER root
