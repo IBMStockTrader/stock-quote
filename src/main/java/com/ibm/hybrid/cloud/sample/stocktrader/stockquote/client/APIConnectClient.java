@@ -25,12 +25,14 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @ApplicationPath("/")
 @Path("/")
 @ApplicationScoped
 @RegisterRestClient
+@RegisterClientHeaders //To enable JWT propagation
 /** mpRestClient "remote" interface for the API Connect facade for the IEX stock quote service */
 public interface APIConnectClient {
 	@GET

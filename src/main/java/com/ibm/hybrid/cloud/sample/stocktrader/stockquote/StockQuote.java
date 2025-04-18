@@ -26,11 +26,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 //Logging (JSR 47)
 import java.util.logging.Level;
@@ -207,9 +203,8 @@ public class StockQuote extends Application {
 	@Produces(MediaType.APPLICATION_JSON)
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
 	/**  Get all stock quotes in Redis.  This is a read-only operation that just returns what's already there, without any refreshing */
-	public Quote[] getAllCachedQuotes() {
-		Quote[] quoteArray = new Quote[] {};
-		ArrayList<Quote> quotes = new ArrayList<Quote>();
+	public List<Quote> getAllCachedQuotes() {
+		ArrayList<Quote> quotes = new ArrayList<>();
 
 		if (jedisPool != null) {
 			// @rtclauss try-with-resources to release the jedis instance back to the pool when done
@@ -234,7 +229,7 @@ public class StockQuote extends Application {
 		} else {
 			logger.warning("jedisPool is null in getAllCachedQuotes()");
 		}
-		return quotes.toArray(quoteArray);
+		return quotes;
 	}
 
 	@POST
@@ -446,8 +441,7 @@ public class StockQuote extends Application {
 		return jedisPoolConfig;
 	}
 
-	public static String getPoolCurrentUsage()
-	{
+	public static String getPoolCurrentUsage() {
 		JedisPool jedisPool = StockQuote.jedisPool;
 		JedisPoolConfig poolConfig = getPoolConfig();
 
