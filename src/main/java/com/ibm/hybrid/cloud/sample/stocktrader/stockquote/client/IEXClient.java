@@ -18,13 +18,15 @@ package com.ibm.hybrid.cloud.sample.stocktrader.stockquote.client;
 
 import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.json.Quote;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.GET;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
@@ -37,5 +39,6 @@ public interface IEXClient {
 	@GET
 	@Path("/{symbol}/quote")
 	@Produces("application/json")
+	@WithSpan(kind = SpanKind.CLIENT, value="IEXClient.getStockQuoteViaIEX")
 	public Quote getStockQuoteViaIEX(@PathParam("symbol") String symbol, @QueryParam("token") String token);
 }

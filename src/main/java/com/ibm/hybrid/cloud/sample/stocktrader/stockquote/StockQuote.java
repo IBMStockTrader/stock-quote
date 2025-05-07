@@ -33,25 +33,27 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 //JSON-B (JSR 367).  This largely replaces the need for JSON-P
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
 
 //JAX-RS 2.0 (JSR 339)
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 
 //CDI 1.2
-import javax.inject.Inject;
-import javax.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
 
 //mpRestClient 1.0
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 //mpFaultTolerance 1.1
@@ -65,7 +67,7 @@ import redis.clients.jedis.JedisPoolConfig;
 
 @ApplicationPath("/")
 @Path("/")
-@RequestScoped
+@ApplicationScoped
 /** This version of StockQuote talks to API Connect (which talks to api.iextrading.com).
   * Note that more recently, we've been using serverless functions (Lambda in AWS, or 
   * Azure Cloud Functions), instead of IBM's API Connect, as the facade around IEX, though
@@ -203,6 +205,7 @@ public class StockQuote extends Application {
 	@Produces(MediaType.APPLICATION_JSON)
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
 	/**  Get all stock quotes in Redis.  This is a read-only operation that just returns what's already there, without any refreshing */
+	@WithSpan
 	public List<Quote> getAllCachedQuotes() {
 		ArrayList<Quote> quotes = new ArrayList<>();
 
@@ -235,6 +238,7 @@ public class StockQuote extends Application {
 	@POST
 	@Path("/{symbol}")
 	@Produces(MediaType.APPLICATION_JSON)
+	@WithSpan
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
 	/**  Set stock quote into cache.  Call this if IEX is failing, to load the backup cache with some stock prices */
 	public void updateCache(@PathParam("symbol") String symbol, @QueryParam("price") double price) throws IOException {
@@ -249,6 +253,7 @@ public class StockQuote extends Application {
 	@Fallback(fallbackMethod = "getStockQuoteViaIEX")
 //	@RolesAllowed({"StockTrader", "StockViewer"}) //Couldn't get this to work; had to do it through the web.xml instead :(
 	/**  Get stock quote from API Connect */
+	@WithSpan
 	public Quote getStockQuote(@PathParam("symbol") String symbol) throws IOException {
 		if (symbol.equalsIgnoreCase(TEST_SYMBOL)) return getTestQuote(TEST_SYMBOL, TEST_PRICE);
 		if (symbol.equalsIgnoreCase(SLOW_SYMBOL)) return getSlowQuote();
@@ -340,6 +345,7 @@ public class StockQuote extends Application {
 	}
 
 	/** When API Connect is unavailable, fall back to calling IEX directly to get the stock quote */
+	@WithSpan
 	public Quote getStockQuoteViaIEX(String symbol) throws IOException {
 		logger.info("Using fallback method getStockQuoteViaIEX");
 		Quote quote = backupCache.get(symbol);
@@ -357,6 +363,7 @@ public class StockQuote extends Application {
 		return quote;
 	}
 
+	@WithSpan
 	private boolean isStale(Quote quote) {
 		if (quote==null) return true;
 
@@ -372,6 +379,7 @@ public class StockQuote extends Application {
 		return (difference > cache_interval*MINUTE_IN_MILLISECONDS); //cached quote is too old
 	}
 
+	@WithSpan
 	private Quote getTestQuote(String symbol, double price) { //in case API Connect or IEX is down or we're rate limited
 		Date now = new Date();
 		String today = formatter.format(now);
@@ -385,6 +393,7 @@ public class StockQuote extends Application {
 		return quote;
 	}
 
+	@WithSpan
 	private Quote getSlowQuote() { //to help test Istio timeout policies; deliberately not put in Redis cache
 		logger.info("Sleeping for one minute for symbol SLOW!");
 
@@ -399,6 +408,7 @@ public class StockQuote extends Application {
 		return getTestQuote(SLOW_SYMBOL, TEST_PRICE);
 	}
 
+	@WithSpan
 	public static JedisPoolConfig getPoolConfig() {
 		if (jedisPoolConfig == null) {
 			JedisPoolConfig poolConfig = new JedisPoolConfig();
@@ -441,6 +451,7 @@ public class StockQuote extends Application {
 		return jedisPoolConfig;
 	}
 
+	@WithSpan
 	public static String getPoolCurrentUsage() {
 		JedisPool jedisPool = StockQuote.jedisPool;
 		JedisPoolConfig poolConfig = getPoolConfig();
