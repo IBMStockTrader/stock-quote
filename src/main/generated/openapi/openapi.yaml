@@ -1,0 +1,62 @@
+---
+openapi: 3.1.0
+paths:
+  /:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quote"
+  /{symbol}:
+    post:
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: price
+        in: query
+        schema:
+          type: number
+          format: double
+      responses:
+        "201":
+          description: Created
+    get:
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+components:
+  schemas:
+    Quote:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+          format: double
+        date:
+          type: string
+        time:
+          type: integer
+          format: int64
+info:
+  title: Generated API
+  version: "1.0"
