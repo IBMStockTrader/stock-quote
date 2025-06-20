@@ -18,23 +18,28 @@ package com.ibm.hybrid.cloud.sample.stocktrader.stockquote.client;
 
 import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.json.Quote;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.GET;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.Path;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.Path;
 
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @ApplicationPath("/")
 @Path("/")
 @ApplicationScoped
 @RegisterRestClient
+@RegisterClientHeaders //To enable JWT propagation
 /** mpRestClient "remote" interface for the API Connect facade for the IEX stock quote service */
 public interface APIConnectClient {
 	@GET
 	@Path("/{symbol}")
 	@Produces("application/json")
+	@WithSpan(kind = SpanKind.CLIENT, value="APIConnectClient.getStockQuoteViaAPIConnect")
 	public Quote getStockQuoteViaAPIConnect(@PathParam("symbol") String symbol);
 }

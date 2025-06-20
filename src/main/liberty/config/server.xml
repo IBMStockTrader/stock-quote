@@ -14,8 +14,8 @@
 
 <server description="Stock Quote server">
     <featureManager>
-        <feature>microProfile-4.1</feature>
-        <feature>appSecurity-2.0</feature>
+        <feature>microProfile-6.1</feature>
+        <feature>appSecurity-5.0</feature>
 <!--    <feature>ldapRegistry-3.0</feature>      -->
     </featureManager>
 
