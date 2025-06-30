@@ -14,6 +14,7 @@
    limitations under the License.
 -->
 
+
 The *stock-quote* microservice gets the price of a specified stock.  It hits an API in **API Connect**,
 which drives a call to `https://cloud.iexapis.com/stable/stock/{symbol}/quote` to get the actual data,
 then mediates the structure of the returned JSON as described below.  Note that an API key needs to be
