@@ -41,6 +41,8 @@
         <warContext>${app.name}</warContext>
         <package.file>${project.build.directory}/${app.name}.zip</package.file>
         <packaging.type>usr</packaging.type>
+        <sonar.organization>ibmstocktrader</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <dependencies>

@@ -59,3 +59,6 @@ docker push mycluster.icp:8500/stock-trader/stock-quote:latest
 helm repo add ibm-charts https://raw.githubusercontent.com/IBM/charts/master/repo/stable/
 helm install ibm-charts/ibm-websphere-liberty -f manifests/stock-quote-values.yaml -n stock-quote --namespace stock-trader --tls
 ```
+
+
+
